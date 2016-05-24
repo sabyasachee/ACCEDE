@@ -23,47 +23,47 @@ def get_flow_img(hsv, frame1_gs, gs_img):
 	flow_rgb = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
 	flow_gs = cv2.cvtColor(flow_rgb, cv2.COLOR_BGR2GRAY)
 					        
-    	return flow_gs
+	return flow_gs
 
 def get_img_luma(img):
 	frame_lum = 0.27*img[:,:,-1] + 0.67*img[:,:,1] + 0.06*img[:,:,0]
-        lum_mean = np.mean(frame_lum.flatten())
+	lum_mean = np.mean(frame_lum.flatten())
 	return lum_mean
 
 if __name__ == '__main__':
-    import sys, getopt, os
+	import sys, getopt, os
 
     #Load the scenes file
 
     
     #read videos
-    filename = sys.argv[1]
-    outname = str(sys.argv[1]).split('.')[0]
-    DOWNSAMPLE=5
+	filename = sys.argv[1]
+	outname = str(sys.argv[1]).split('.')[0]
+	DOWNSAMPLE=5
     #Read the video file
-    cam  = cv2.VideoCapture(filename)
-    fps=cam.get(cv.CV_CAP_PROP_FPS)	#Read the file frame rate
-    print fps
+	cam  = cv2.VideoCapture(filename)
+	fps=cam.get(cv.CV_CAP_PROP_FPS)	#Read the file frame rate
+	print fps
 
-    frame_number=0
-    current_scene_number=0
-    frames_this_shot=0
+	frame_number=0
+	current_scene_number=0
+	frames_this_shot=0
 
     #color = np.random.randint(0,255,(1000,3))
     #feature_params = dict( maxCorners = 300, qualityLevel = 0.3, minDistance = 7, blockSize = 7 )
     #lk_params = dict(winSize = old_gray.shape, maxLevel = 2, criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
-    luma=[]
-    intensity_avg=[]
-    flow_intensity_avg=[0]
+	luma=[]
+	intensity_avg=[]
+	flow_intensity_avg=[0]
 
     #frame_downsample_ref = 5
-    while(cam.isOpened()):
-        ret, img = cam.read()
+	while(cam.isOpened()):
+		ret, img = cam.read()
 	if img is not None:	
 		if not(ret):
-		    print "Skipping frame.."
-		    continue
+			print "Skipping frame.."
+			continue
 		
 		## Accumulate stuff for this shot
 		#frames_this_shot+=1
@@ -107,6 +107,6 @@ if __name__ == '__main__':
 		cam.release()
 		cv2.destroyAllWindows()
 #save all low level features
-    np.save(outname+'_luma.npy',luma)
-    np.save(outname+'_intensity.npy', intensity_avg)
-    np.save(outname+'_flow.npy', flow_intensity_avg)
+	np.save(outname+'_luma.npy',luma)
+	np.save(outname+'_intensity.npy', intensity_avg)
+	np.save(outname+'_flow.npy', flow_intensity_avg)
