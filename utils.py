@@ -1,9 +1,10 @@
 import numpy as np
 import math
 
-def get_statistics(values):
+def get_statistics(values, clip = True):
 	# When all values equal zero, variance will be zero and kurtosis is inf. This is symbolised ny -1 as kurtosis value
-	values = sorted(values[2:-2])
+	if clip:
+		values = sorted(values[2:-2])
 	length = len(values)
 	half_length = length/2
 	quarter_length = half_length/2
@@ -27,9 +28,11 @@ def get_statistics(values):
 	_min = values[0]
 	_max = values[length - 1]
 	_range = _max - _min
+	squared = 0
+	double_squared = 0
 	for value in values:
-		squared = (value - mean)*(value - mean)
-		double_squared = squared*squared
+		squared += (value - mean)*(value - mean)
+		double_squared += squared*squared
 	fourth_moment = float(double_squared)/length
 	variance = float(squared)/length
 	if variance > 0.0:
@@ -110,7 +113,7 @@ def audio_statistics():
 					 mins[i], maxs[i], ranges[i]))
 			fw.write("\n")
 
-# statistics("../results/intensity", "intensity")
-# statistics("../results/luminance", "luma")
-# statistics("../results/optical_flow", "flow")
+statistics("../results/intensity", "intensity")
+statistics("../results/luminance", "luma")
+statistics("../results/optical_flow", "flow")
 audio_statistics()
