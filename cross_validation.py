@@ -6,27 +6,38 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
 
-def correlation(x, y):
-	length = len(x)
-	mean_x = float(sum(x))/length
-	mean_y = float(sum(y))/length
-	product_sum = 0
-	squared_sum_x = 0
-	squared_sum_y = 0
-	for i in range(0, length):
-		deviation_x = x[i] - mean_x
-		deviation_y = y[i] - mean_y
-		product_sum += deviation_x*deviation_y
-		squared_sum_x += deviation_x*deviation_x
-		squared_sum_y += deviation_y*deviation_y
-	covariance = float(product_sum)/length
-	std_x = math.sqrt(float(squared_sum_x)/length)
-	std_y = math.sqrt(float(squared_sum_y)/length)
-	try:
-		covariance = float(covariance)/(std_x*std_y)
-	except ZeroDivisionError as error:
-		print error
-	return covariance
+def correlations(arousal_values, valence_values, feature_vectors):
+	# matrix = numpy.zeros((9800, 10))
+	# for i in range(0, 9800):
+	# 	matrix[i][0] = values[i]
+	# 	for j in range(1, 10):
+	# 		matrix[i][j] = feature_vectors[i][j-1]
+	# result = numpy.corrcoef(matrix)
+	# return list(result[0])
+	mean_vectors = []
+	median_vectors = []
+	std_vectors = []
+	kurt_vectors = []
+	lower_quartile_vectors = []
+	upper_quartile_vectors = []
+	min_vectors = []
+	max_vectors = []
+	range_vectors = []
+	for i in range(0, 9800):
+		mean_vectors.append(feature_vectors[i][0])
+		median_vectors.append(feature_vectors[i][1])
+		std_vectors.append(feature_vectors[i][2])
+		kurt_vectors.append(feature_vectors[i][3])
+		lower_quartile_vectors.append(feature_vectors[i][4])
+		upper_quartile_vectors.append(feature_vectors[i][5])
+		min_vectors.append(feature_vectors[i][6])
+		max_vectors.append(feature_vectors[i][7])
+		range_vectors.append(feature_vectors[i][8])
+	matrix = [arousal_values, valence_values, mean_vectors, median_vectors, std_vectors, kurt_vectors, lower_quartile_vectors, upper_quartile_vectors, min_vectors, 
+		max_vectors, range_vectors]
+	# matrix = [values, feature_vectors]
+	result = numpy.corrcoef(matrix)
+	return result[0:2]
 
 def cross_validation(regressors, feature_vectors, true_values, train_to_test_ratio = 8, valid_to_test_ratio = 1):
 	# return rmse, pearson-coefficient
@@ -96,37 +107,25 @@ def cross_validation(regressors, feature_vectors, true_values, train_to_test_rat
 
 	return rmse, correlation
 
-# regressors = [SVR(kernel = 'linear', C = 0.00001), SVR(kernel = 'linear', C = 0.0001), SVR(kernel = 'linear', C = 0.001), SVR(kernel = 'linear', C = 0.01), 
-# 			SVR(kernel = 'linear', C = 0.1), SVR(kernel = 'linear', C = 1), SVR(kernel = 'linear', C = 10), SVR(kernel = 'linear', C = 100), 
-# 			SVR(kernel = 'linear', C = 1000)]
-# regressors = [SVR(C = 0.00001), SVR(C = 0.0001), SVR(C = 0.001), SVR(C = 0.01), SVR(C = 0.1), SVR(C = 1), SVR(C = 10), SVR(C = 100), 
-# 			SVR(C = 1000)]
-# regressors = [LinearSVR(C = 0.00001), LinearSVR(C = 0.0001), LinearSVR(C = 0.001), LinearSVR(C = 0.01), 
-# 			LinearSVR(C = 0.1), LinearSVR(C = 1), LinearSVR(C = 10), LinearSVR(C = 100), 
-# 			LinearSVR(C = 1000)]
-# regressors = [LinearSVR(C = 0.001, epsilon = 0.1), LinearSVR(C = 100, epsilon = 0.1)]
-# regressors = [LinearRegression()]
-# regressors = [SVR(kernel = 'linear', C = 0.001), SVR(kernel = 'linear', C = 100)]
-# regressors = [SVR(kernel = 'poly', degree = 1, C = 0.001), SVR(kernel = 'poly', degree = 1, C = 100)]
+def get_feature_vectors(filename):
+	feature_vectors = []
+	with open(filename) as fr:
+		header = fr.readline()
+		for i in range(0, 9800):
+			line = fr.readline()
+			values = line.strip().split("\t")[1:]
+			features = [float(value) for value in values]
+			feature_vectors.append(features)
+	return feature_vectors
 
-audio_feature_vectors = []
+
 arousal_feature_vectors = []
 valence_feature_vectors = []
-flow_feature_vectors = []
-intensity_feature_vectors = []
-luma_feature_vectors = []
 valence_values = []
 arousal_values = []
 valence_variance_values = []
 arousal_variance_values = []
-with open("../results/audio.txt") as fr:
-	header = fr.readline()
-	n_audio_features = len(header.strip().split("\t")) - 1
-	header = fr.readline()
-	for i in range(0, 9800):
-		values = fr.readline().strip().split("\t")[1:]
-		audio_feature_vector = [float(value) for value in values]
-		audio_feature_vectors.append(audio_feature_vector)
+
 with open("../features/ACCEDEfeaturesArousal_TAC2015.txt") as fr:
 	header = fr.readline()
 	# print header
@@ -153,24 +152,7 @@ with open("../annotations/ACCEDEranking.txt") as fr:
 		arousal_values.append(arousal_value)
 		valence_variance_values.append(valence_variance)
 		arousal_variance_values.append(arousal_variance)
-with open("../results/flow.txt") as fr:
-	header = fr.readline()
-	for i in range(0, 9800):
-		values = fr.readline().strip().split("\t")[1:]
-		flow_feature_vector = [float(value) for value in values]
-		flow_feature_vectors.append(flow_feature_vector)
-with open("../results/intensity.txt") as fr:
-	header = fr.readline()
-	for i in range(0, 9800):
-		values = fr.readline().strip().split("\t")[1:]
-		intensity_feature_vector = [float(value) for value in values]
-		intensity_feature_vectors.append(flow_feature_vector)
-with open("../results/luma.txt") as fr:
-	header = fr.readline()
-	for i in range(0, 9800):
-		values = fr.readline().strip().split("\t")[1:]
-		luma_feature_vector = [float(value) for value in values]
-		luma_feature_vectors.append(flow_feature_vector)
+
 
 # Specify the regressors
 regressors_1 = [LinearRegression(), 
@@ -195,48 +177,75 @@ regressors_2 = [SGDRegressor(loss = 'epsilon_insensitive', alpha = 0.00001),
 				SGDRegressor(loss = 'epsilon_insensitive', alpha = 1000)
 				]
 
-# rmse, correlation = cross_validation(regressors_1, arousal_feature_vectors, arousal_values)
-# print rmse, correlation
+luma_feature_vectors = get_feature_vectors("../results/luma.txt")
+intensity_feature_vectors = get_feature_vectors("../results/intensity.txt")
+flow_feature_vectors = get_feature_vectors("../results/flow.txt")
 
-# rmse, correlation = cross_validation(regressors_1, valence_feature_vectors, valence_values)
-# print rmse, correlation
+mfcc_1_feature_vectors = get_feature_vectors("../results/mfcc[1].txt")
+mfcc_2_feature_vectors = get_feature_vectors("../results/mfcc[2].txt")
+mfcc_3_feature_vectors = get_feature_vectors("../results/mfcc[3].txt")
+mfcc_4_feature_vectors = get_feature_vectors("../results/mfcc[4].txt")
+mfcc_5_feature_vectors = get_feature_vectors("../results/mfcc[5].txt")
+mfcc_6_feature_vectors = get_feature_vectors("../results/mfcc[6].txt")
+mfcc_7_feature_vectors = get_feature_vectors("../results/mfcc[7].txt")
+mfcc_8_feature_vectors = get_feature_vectors("../results/mfcc[8].txt")
+mfcc_9_feature_vectors = get_feature_vectors("../results/mfcc[9].txt")
+mfcc_10_feature_vectors = get_feature_vectors("../results/mfcc[10].txt")
+mfcc_11_feature_vectors = get_feature_vectors("../results/mfcc[11].txt")
+mfcc_12_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
 
-# for i in range(0, n_arousal_features):
-# 	features = []
-# 	for j in range(0, 9800):
-# 		features.append(arousal_feature_vectors[j][i])
-# 	print correlation(features, arousal_values)
-# print
-# for i in range(0, n_valence_features):
-# 	features = []
-# 	for j in range(0, 9800):
-# 		features.append(valence_feature_vectors[j][i])
-# 	print correlation(features, valence_values)
-# print
-for i in range(0, 9):
-	features = []
-	for j in range(0, 9800):
-		features.append(flow_feature_vectors[j][i])
-	print numpy.corrcoef(numpy.array(features), numpy.array(valence_values))
+mfcc_1_de_feature_vectors = get_feature_vectors("../results/mfcc_de[1].txt")
+mfcc_2_de_feature_vectors = get_feature_vectors("../results/mfcc_de[2].txt")
+mfcc_3_de_feature_vectors = get_feature_vectors("../results/mfcc_de[3].txt")
+mfcc_4_de_feature_vectors = get_feature_vectors("../results/mfcc_de[4].txt")
+mfcc_5_de_feature_vectors = get_feature_vectors("../results/mfcc_de[5].txt")
+mfcc_6_de_feature_vectors = get_feature_vectors("../results/mfcc_de[6].txt")
+mfcc_7_de_feature_vectors = get_feature_vectors("../results/mfcc_de[7].txt")
+mfcc_8_de_feature_vectors = get_feature_vectors("../results/mfcc_de[8].txt")
+mfcc_9_de_feature_vectors = get_feature_vectors("../results/mfcc_de[9].txt")
+mfcc_10_de_feature_vectors = get_feature_vectors("../results/mfcc_de[10].txt")
+mfcc_11_de_feature_vectors = get_feature_vectors("../results/mfcc_de[11].txt")
+mfcc_12_de_feature_vectors = get_feature_vectors("../results/mfcc_de[12].txt")
+
+# mfcc_1_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_2_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_3_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_4_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_5_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_6_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_7_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_8_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_9_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_10_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_11_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+# mfcc_12_feature_vectors = get_feature_vectors("../results/mfcc[12].txt")
+
+print correlations(arousal_values, valence_values, luma_feature_vectors)
+print correlations(arousal_values, valence_values, intensity_feature_vectors)
+print correlations(arousal_values, valence_values, flow_feature_vectors)
 print
-for i in range(0, 9):
-	features = []
-	for j in range(0, 9800):
-		features.append(intensity_feature_vectors[j][i])
-	print numpy.corrcoef(numpy.array(features), numpy.array(valence_values))
+print correlations(arousal_values, valence_values, mfcc_1_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_2_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_3_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_4_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_5_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_6_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_7_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_8_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_9_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_10_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_11_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_12_feature_vectors)
 print
-for i in range(0, 9):
-	features = []
-	for j in range(0, 9800):
-		features.append(luma_feature_vectors[j][i])
-	# print correlation(features, arousal_values)
-	print numpy.corrcoef(numpy.array(features), numpy.array(valence_values))
-
-# for i in range(0, n_audio_features):
-# 	for j in range(0, 9):
-# 		features = []
-# 		for k in range(0, 9800):
-# 			features.append(audio_feature_vectors[k][i*9 + j])
-# 		# print correlation(features, valence_values)
-# 		print numpy.corrcoef(numpy.array(features), numpy.array(valence_values))
-# 	print
+print correlations(arousal_values, valence_values, mfcc_1_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_2_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_3_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_4_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_5_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_6_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_7_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_8_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_9_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_10_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_11_de_feature_vectors)
+print correlations(arousal_values, valence_values, mfcc_12_de_feature_vectors)

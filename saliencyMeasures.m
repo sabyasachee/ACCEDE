@@ -1,16 +1,16 @@
 function saliencyMeasures()
-for i=0:20
+parfor i=0:9799
     filename = strcat('Documents/video/ACCEDE', sprintf('%05d.mp4', i));
-    outfilename = strcat('ACCEDE', sprintf('%05d.txt', i));
+    outfilename = strcat('Documents/results/saliency/ACCEDE', sprintf('%05d_saliency.txt', i));
     fileID = fopen(outfilename, 'w');
     fprintf(fileID, 'frame_number\t0.2\t0.5\t0.7\n');
     disp(filename);
     video = VideoReader(filename);
-%     nframes = video.NumberOfFrames;
+    nframes = video.NumberOfFrames;
     width = video.Width;
     heigth = video.Height;
     area = width * heigth;
-    for j=1:10
+    for j=1:nframes
         frame = read(video, j);
         [L, a, b] = RGB2Lab(frame);
         salMat = saliencyMeasure({L, a, b});
