@@ -15,7 +15,8 @@ RANGE = 8
 
 def cross_validation(c_vals, feature_vectors, labels, correlations, k = 1):
 
-	n_dimension = k*n_features
+	n_dimension = int(k*n_features)
+	print "n_dimension = ", n_dimension
 	features = []
 	# sort the feature_vector according to correlations
 	for i in range(0, n_samples):
@@ -60,14 +61,14 @@ def cross_validation(c_vals, feature_vectors, labels, correlations, k = 1):
 		best_c_val = None
 		# try with every c_val and save the best_c_val if the squared difference sum (mse) is least
 		for c_val in c_vals:
-			print "\t\t c_val = ", c_val
 			model = WekaSVR()
 			model.fit(numpy.array(train_features, dtype = "float"), numpy.array(train_labels, dtype = "float"), c_val = c_val)
 			valid_predict_labels_string = model.predict(numpy.array(valid_features, dtype = "float"))
 			valid_predict_labels = [float(x) for x in valid_predict_labels_string]
 			squared_difference_sum = 0
 			for j in range(0, valid_length):
-				squared_difference_sum = (valid_predict_labels[j] - valid_labels[j])*(valid_predict_labels[j] - valid_labels[j])
+				squared_difference_sum += (valid_predict_labels[j] - valid_labels[j])*(valid_predict_labels[j] - valid_labels[j])
+			print "\t\t c_val = %f rmse = %f" % (c_val, math.sqrt(float(squared_difference_sum)/valid_length))
 			# print squared_difference_sum
 			if min_squared_difference_sum is None or min_squared_difference_sum > squared_difference_sum:
 				min_squared_difference_sum = squared_difference_sum
@@ -78,6 +79,8 @@ def cross_validation(c_vals, feature_vectors, labels, correlations, k = 1):
 		best_model.fit(numpy.array(train_features, dtype = "float"), numpy.array(train_labels, dtype = "float"), c_val = best_c_val)
 		test_predict_labels_string = best_model.predict(numpy.array(test_features, dtype = "float"))
 		test_predict_labels = [float(x) for x in test_predict_labels_string]
+		print test_predict_labels
+		print test_labels
 		predict_labels += list(test_predict_labels)
 	
 	print "Done"
@@ -129,7 +132,7 @@ feature_names = [
 				"pcm_zcr","pcm_zcr_de","pcm_zcr_stddev","pcm_zcr_amean","pcm_zcr_de_stddev","pcm_zcr_de_amean"
 				]
 n_features = len(feature_names)
-n_samples = 9800
+n_samples = 100
 # dictionary of correlation coefficients, key --> [mean, median, std, kurtosis, lower_quartile, upper_quartile, min, max, range]
 arousal_correlations = dict()
 valence_correlations = dict()
@@ -176,6 +179,7 @@ with open("../annotations/ACCEDEranking.txt") as fr:
 # feature_vectors shape = n_samples * (n_features * 9), columns are ordered in decreasing order of correlation coefficient
 # Each element is a tuple (feature_name, statistic_number, value)
 # feature_header shape = (n_features * 9), each a tuple (feature_name (string), number (0-8) telling statistics) ordered --do--
+print "Loading features"
 for i in range(0, n_samples):
 	feature_vectors.append([])
 for feature_name in feature_names:
@@ -188,7 +192,7 @@ for feature_name in feature_names:
 			values = line.strip().split("\t")[1:]
 			feature_vector = [(feature_name,j,float(value)) for j, value in enumerate(values)]
 			feature_vectors[i].extend(feature_vector)
-
+print "Done loading features"
 # feature_header = sorted(feature_header, key = lambda feature_tuple: valence_correlations[feature_tuple[0]][feature_tuple[1]], reverse = True)
 
 
@@ -201,6 +205,11 @@ for feature_name in feature_names:
 # print TestModel(model, test_features)
 # print test_labels
 
-c_vals = [0.00001 ,0.0001, 0.001, 0.01, 0.1, 1., 10.]
-
+c_vals = [0.00001 ,0.0001, 0.001, 0.01, 0.1, 1.]
+# c_vals = [1., 10., 100., 1000.]
 print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 1)
+print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.9)
+print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.8)
+print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.5)
+print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.1)
+print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.01)
