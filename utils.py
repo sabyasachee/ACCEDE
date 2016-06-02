@@ -1,6 +1,13 @@
 import numpy
 import math
 
+def rmse(predict, true):
+	rmse = 0.
+	for p, t in zip(predict, true):
+		rmse += (p - t)*(p - t)
+	rmse = math.sqrt(float(rmse)/len(predict))
+	return rmse
+
 def get_statistics(values, clip = True):
 	# When all values equal zero, variance will be zero and kurtosis is inf. This is symbolised by -1 as kurtosis value
 	if clip:
@@ -94,6 +101,7 @@ def audio_statistics():
 
 def audio_chroma_statistics():
 	audio_features = ["octave1", "octave2", "octave3", "octave4", "octave5", "octave6", "octave7", "octave8", "octave9", "octave10", "octave11", "octave12"]
+	# audio_features = ["octave1"]
 	n_features = len(audio_features)
 	for i in range(0, n_features):
 		print audio_features[i]
@@ -135,7 +143,10 @@ def save_correlation():
 				"voiceProb","voiceProb_de","voiceProb_stddev","voiceProb_amean","voiceProb_de_stddev","voiceProb_de_amean",
 				"HNR","HNR_de","HNR_stddev","HNR_amean","HNR_de_stddev","HNR_de_amean",
 				"F0", "F0_de","F0_stddev","F0_amean","F0_de_stddev","F0_de_amean",
-				"pcm_zcr","pcm_zcr_de","pcm_zcr_stddev","pcm_zcr_amean","pcm_zcr_de_stddev","pcm_zcr_de_amean"
+				"pcm_zcr","pcm_zcr_de","pcm_zcr_stddev","pcm_zcr_amean","pcm_zcr_de_stddev","pcm_zcr_de_amean",
+				"octave1","octave2","octave3","octave4",
+				"octave5","octave6","octave7","octave8",
+				"octave9","octave10","octave11","octave12",
 				]
 
 	arousal_values = []
@@ -202,5 +213,5 @@ def save_correlation():
 # statistics("../results/luminance", "luma")
 # statistics("../results/optical_flow", "flow")
 # audio_statistics()
-# save_correlation()
-audio_chroma_statistics()
+save_correlation()
+# audio_chroma_statistics()
