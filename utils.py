@@ -92,6 +92,26 @@ def audio_statistics():
 					mean, median, std, kurtosis, lower_quartile, upper_quartile, _min, _max, _range = get_statistics(array)
 					fw.write("%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n" % (file_id, mean, median, std, kurtosis, lower_quartile, upper_quartile, _min, _max, _range))
 
+def audio_chroma_statistics():
+	audio_features = ["octave1", "octave2", "octave3", "octave4", "octave5", "octave6", "octave7", "octave8", "octave9", "octave10", "octave11", "octave12"]
+	n_features = len(audio_features)
+	for i in range(0, n_features):
+		print audio_features[i]
+		with open("../results/" + audio_features[i] + ".txt", "w") as fw:
+			fw.write("file_id\tmean\tmedian\tstd\tkurtosis\tlower_quartile\tupper_quartile\tmin\tmax\trange\n")
+			for file_id in range(0, 9800):
+				with open("../audio_results_chroma/ACCEDE" + str(file_id).zfill(5) + "_features.txt") as fr:
+					array = []
+					for line in fr:
+						values = line.strip().split(";")
+						array.append(float(values[i]))
+					# print array
+					# print len(array)
+					if not file_id%1000:
+						print "\t", file_id
+					mean, median, std, kurtosis, lower_quartile, upper_quartile, _min, _max, _range = get_statistics(array)
+					fw.write("%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n" % (file_id, mean, median, std, kurtosis, lower_quartile, upper_quartile, _min, _max, _range))
+
 def save_correlation():
 	header =	[
 				"luma", "intensity", "flow", 
@@ -183,3 +203,4 @@ def save_correlation():
 # statistics("../results/optical_flow", "flow")
 # audio_statistics()
 # save_correlation()
+audio_chroma_statistics()

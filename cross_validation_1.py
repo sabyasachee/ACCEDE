@@ -129,7 +129,7 @@ feature_names = [
 				"pcm_zcr","pcm_zcr_de","pcm_zcr_stddev","pcm_zcr_amean","pcm_zcr_de_stddev","pcm_zcr_de_amean"
 				]
 n_features = len(feature_names)
-n_samples = 100
+n_samples = 9800
 # dictionary of correlation coefficients, key --> [mean, median, std, kurtosis, lower_quartile, upper_quartile, min, max, range]
 arousal_correlations = dict()
 valence_correlations = dict()
@@ -201,6 +201,6 @@ for feature_name in feature_names:
 # print TestModel(model, test_features)
 # print test_labels
 
-c_vals = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1., 10., 100., 1000.]
+c_vals = [0.00001 ,0.0001, 0.001, 0.01, 0.1, 1., 10.]
 
 print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 1)
