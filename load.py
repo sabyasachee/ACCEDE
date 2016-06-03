@@ -1,6 +1,17 @@
-# outputs a list of vectors of length 9800 each vector of length equal to number of feature_files, each element of the form (feature_name, statistic, value)
-# feature_name is string, statistic is a number 0-8 for mean, median,..., 
 import math
+import numpy
+import threading
+from mpi4py import MPI
+
+class movieloadThread(threading.Thread):
+	def __init__(self, i, movie):
+		threading.Thread.__init__(self)
+		self.i = i
+		self.movie = movie
+
+	def run(self):
+		movie_matrix = load_input_movie(self.movie)
+		movies_matrix[self.i] = movie_matrix
 
 feature_names = [
 				"luma", "intensity", "flow", 
@@ -25,13 +36,23 @@ feature_names = [
 				"HNR","HNR_de","HNR_stddev","HNR_amean","HNR_de_stddev","HNR_de_amean",
 				"F0", "F0_de","F0_stddev","F0_amean","F0_de_stddev","F0_de_amean",
 				"pcm_zcr","pcm_zcr_de","pcm_zcr_stddev","pcm_zcr_amean","pcm_zcr_de_stddev","pcm_zcr_de_amean",
+				"octave0",
 				"octave1","octave2","octave3","octave4",
 				"octave5","octave6","octave7","octave8",
-				"octave9","octave10","octave11","octave12",
+				"octave9","octave10","octave11"
 				]
+movies = [
+		"After_The_Rain", "Attitude_Matters", "Barely_legal_stories", "Between_Viewings", "Big_Buck_Bunny", "Chatter", "Cloudland", "Damaged_Kung_Fu",
+		"Decay", "Elephant_s_Dream", "First_Bite", "Full_Service", "Islands", "Lesson_Learned", "Norm", "Nuclear_Family", "On_time", "Origami", 
+		"Parafundit", "Payload", "Riding_The_Rails", "Sintel", "Spaceman", "Superhero", "Tears_of_Steel", "The_room_of_franz_kafka", 
+		"The_secret_number", "To_Claire_From_Sonny", "Wanted", "You_Again"  	
+		]
+movies_matrix = []
 n_features = len(feature_names)
 n_samples = 9800
 
+# outputs a list of 9800 vectors each vector of length equal to number of feature_files * 9, each element of the form (feature_name, statistic, value)
+# feature_name is string, statistic is a number 0-8 for mean, median,..., 
 def load_input():
 	print n_samples
 	feature_vectors = []
@@ -49,6 +70,32 @@ def load_input():
 	print "Done loading features"
 	return feature_vectors
 
+# outputs 30 matrices, one for each movie
+# each matrix is of dimension n_features * n_frames
+def load_input_movie(movie):
+	print "Loading", movie, "..."
+	movie_matrix = []
+	for i in range(0, n_features):
+		movie_matrix.append([])
+	for i, feature_name in enumerate(feature_names):
+		feature_vector = []
+		filename = "../movie_results/%s/%s_%s.txt" % (movie, movie, feature_name)
+		with open(filename) as fr:
+			line = fr.readline()
+			for line in fr:
+				feature_vector.append(float(line.strip().split("\t")[1]))
+		movie_matrix.append(feature_vector)
+	return movie_matrix
+
+def fast_load_input_movies():
+	for movie in movies:
+		movies_matrix.append([])
+	comm = MPI.COMM_WORLD
+	for i, movie in enumerate(movies):
+		# thread = movieloadThread(i, movie)
+		# thread.start()
+		movie_matrix = load_input_movie(movie)
+		movies_matrix[i] = movie_matrix
 
 # outputs four lists -> valence_labels, arousal_labels, valence_correlation_coefficients and arousal_correlation_coefficients
 # valence_labels and arousal_labels are lists of length 9800
@@ -99,6 +146,27 @@ def load_output():
 	print
 	return valence_labels, arousal_labels, valence_correlations, arousal_correlations
 
+# load valence and arousal labels for movies per second
+def load_output_movies():
+	valence_labels = []
+	arousal_labels = []
+	for movie in movies:
+		labels = []
+		with open("../continuous-annotations/" + movie + "_Valence.txt") as fr:
+			line = fr.readline()
+			for line in fr:
+				value = float(line.strip().split("\t")[1])
+				labels.append(value)
+		valence_labels.append(labels)
+		labels = []
+		with open("../continuous-annotations/" + movie + "_Arousal.txt") as fr:
+			line = fr.readline()
+			for line in fr:
+				value = float(line.strip().split("\t")[1])
+				labels.append(value)
+		arousal_labels.append(labels)
+	return valence_labels, arousal_labels
+
 # sort the feature_vectors according to correlation_coefficients
 # and return features according to required dimension
 def sort_features(feature_vectors, correlations, n_dimension = n_features):
@@ -117,3 +185,13 @@ def sort_features(feature_vectors, correlations, n_dimension = n_features):
 		vector = [tuple_value[2] for tuple_value in feature_vectors[i][:n_dimension]]
 		features.append(vector)
 	return features
+
+# load the fps of each movie file
+def load_fps():
+	fps = []
+	with open("..//movie_results/fps.txt") as fr:
+		line = fr.readline()
+		for line in fr:
+			value = line.strip().split("\t")[1]
+			fps.append(value)
+	return fps
