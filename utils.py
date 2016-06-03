@@ -1,5 +1,7 @@
 import numpy
 import math
+import load
+import os
 
 def rmse(predict, true):
 	rmse = 0.
@@ -209,9 +211,89 @@ def save_correlation():
 	fw1.close()
 	fw2.close()
 
+def organize_movies():
+	movies = load.movies
+	names = load.feature_names
+	home = os.path.expanduser("~") + "/Documents"
+	for movie in movies:
+		print "doing", movie
+		folder = home + "/movie_results/" + movie
+		if not os.path.exists(folder):
+			os.makedirs(folder)
+		l = list(numpy.load(home + "/movie_results/luma/" + movie + "_luma.npy"))
+		l = [float(value) for value in l]
+		print "\tluma..."
+		with open(folder + "/" + movie + "_luma.txt", "w") as fw:
+			fw.write("frame_number\tvalue\n")
+			for i, v in enumerate(l):
+				fw.write("%d\t%f\n" % (i, v))
+		iy = list(numpy.load(home + "/movie_results/intensity/" + movie + "_intensity.npy"))
+		iy = [float(value) for value in iy]
+		print "\tintensity..."
+		with open(folder + "/" + movie + "_intensity.txt", "w") as fw:
+			fw.write("frame_number\tvalue\n")
+			for i, v in enumerate(iy):
+				fw.write("%d\t%f\n" % (i, v))
+		f = list(numpy.load(home + "/movie_results/flow/" + movie + "_flow.npy"))
+		f = [float(value) for value in f]
+		print "\tflow..."
+		with open(folder + "/" + movie + "_flow.txt", "w") as fw:
+			fw.write("frame_number\tvalue\n")
+			for i, v in enumerate(f):
+				fw.write("%d\t%f\n" % (i, v))
+		with open(home + "/movie_audio_results/" + movie + "_features.txt", "r") as fr:
+			for i in range(0, 4):
+				line = fr.readline()
+			names = []
+			fws = []
+			for i in range(4, 145):
+				line = fr.readline()
+				name = line.strip().split(" ")[1]
+				names.append(name)
+				fw = open(folder + "/" + movie + "_" + name + ".txt", "w")
+				fw.write("frame_number\tvalue\n")
+				fws.append(fw)
+			for i in range(145, 149):
+				line = fr.readline()
+			for line in fr:
+				values = line.strip().split(",")[1:-1]
+				frame_number = int(values[0])
+				if not frame_number%1000:
+					print "\t", frame_number
+				values = [float(value) for value in values[1:]]
+				for i, value in enumerate(values):
+					fws[i].write("%d\t%f\n" % (frame_number, value))
+			for fw in fws:
+				fw.close()
+		with open(home + "/movie_audio_results_chroma/" + movie + "_features.txt", "r") as fr:
+			fws = []
+			for i in range(0, 12):
+				fw = open(folder + "/" + movie + "_octave" + str(i) + ".txt", "w")
+				fw.write("frame_number\tvalue\n")
+				fws.append(fw)
+			frame_number = 0
+			for line in fr:
+				values = line.strip().split(";")
+				values = [float(value) for value in values]
+				for i in range(0, 12):
+					fws[i].write("%d\t%f\n" % (frame_number, values[i]))
+				if not frame_number%1000:
+					print "\t", frame_number
+				frame_number += 1
+			for fw in fws:
+				fw.close()
+		print "done", movie
+
+def statistic(values, option):
+	if option == 0:
+		return float(sum(values))/len(values)
+	elif option == 1:
+		
+
 # statistics("../results/intensity", "intensity")
 # statistics("../results/luminance", "luma")
 # statistics("../results/optical_flow", "flow")
 # audio_statistics()
-save_correlation()
+# save_correlation()
 # audio_chroma_statistics()
+# organize_movies()
