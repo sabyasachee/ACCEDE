@@ -1,23 +1,31 @@
 import numpy
+import math
 from sklearn.externals import joblib
 import load
 import utils
+import matrix
+import matplotlib.pyplot as plt
 
-def transfer_knowledge(valence_model, arousal_model, t = 10):
+def predict(matrix, model):
+	matrix = numpy.array(matrix, dtype = 'float')
+	matrix = matrix.transpose()
+	print matrix.shape
+	return numpy.array(model.predict(matrix), dtype = 'float')
+
+def scale(row):
+	return (row - 1)/2 - 1
+
+def transfer_knowledge(valence_models, arousal_models, t = 10):
 	# load labels and movies
 	valence_labels, arousal_labels = load.load_output_movies()
-	videos_fps = load.load_fps()
 	movies = load.movies
-	load.fast_load_input_movies()
-	movies_matrix = load.movies_matrix
-	
-	# load valence_header and arousal_headers
+	movies_matrix = []
+	for movie in movies:
+		movies_matrix.append(load.load_input_movie(movie))
 	feature_names = load.feature_names
-	feature_name_to_index = {}
 	valence_header = []
 	arousal_header = []
 	for i, feature_name in enumerate(feature_names):
-		feature_name_to_index[feature_name] = i
 		for j in range(0, 9):
 			valence_header.append((feature_name, j))
 			arousal_header.append((feature_name, j))
@@ -27,62 +35,62 @@ def transfer_knowledge(valence_model, arousal_model, t = 10):
 	valence_header = sorted(valence_header, key = lambda valence_tuple: valence_correlations[valence_tuple[0]][valence_tuple[1]], reverse = True)
 	arousal_header = sorted(arousal_header, key = lambda arousal_tuple: arousal_correlations[arousal_tuple[0]][arousal_tuple[1]], reverse = True)
 
-	# iterate through each movie
-	# get the labels
-	# for each second, construct a vector of length n_features*9 according to header
-	# predict using model
-	# collect all predictions
-	# scale predictions
-	# calculate rmse and correlation
-	for i, movie_matrix in movies_matrix:
-		valence_labels_movie = valence_labels[i]
-		arousal_labels_movie = arousal_labels[i]
-		video_fps = videos_fps[i]
-		audio_fps = 100
-		length = len(valence_labels_movie)
+	# iterate through each movie_matrix
+	# get the valence and arousal labels
+	# for each feature_vector, calculate statistics on t second window shifted by one second every step
+	# get the new matrix, n_features * (statistics * duration)
+	# sort the columns according to headers
+	# make the predictions
+	# scale the predictions
 
-		valence_predict_movie = []
-		arousal_predict_movie = []
+	for i, movie_matrix in enumerate(movies_matrix):
+		print movies[i]
+		n_annotations = len(arousal_labels[i])
+		transformed_movie_matrix = matrix.window_matrix(movie_matrix, t, n_annotations)
 
-		for j in range(0, length):
-			features = []
-			for (name, statistic) in valence_header:
-				k = feature_name_to_index[name]
-				if name in ["luma", "intensity", "flow"]:
-					fps = video_fps
-				else:
-					fps = audio_fps
-				last_frame = len(movies_matrix[k])
-				start_frame = int(round(j*fps))
-				end_frame = int(round((j + 1)*fps))
-				if end_frame > last_frame:
-					end_frame = last_frame
-				values = movies_matrix[k][start_frame: end_frame]
-				value = utils.statistic(values, statistic)
-				features.append(values)
-			predict = valence_model.predict(features)
-			valence_predict_movie.append(predict)
+		arousal_movie_matrix = matrix.sort_matrix(transformed_movie_matrix, arousal_correlations)
+		valence_movie_matrix = matrix.sort_matrix(transformed_movie_matrix, valence_correlations)
+		
+		for arousal_model, valence_model in zip(arousal_models, valence_models):
+			arousal_predictions = predict(arousal_movie_matrix, arousal_model)
+			arousal_predictions = scale(arousal_predictions)
 
-			features = []
-			for (name, statistic) in arousal_header:
-				k = feature_name_to_index[name]
-				if name in ["luma", "intensity", "flow"]:
-					fps = video_fps
-				else:
-					fps = audio_fps
-				last_frame = len(movies_matrix[k])
-				start_frame = int(round(j*fps))
-				end_frame = int(round((j + 1)*fps))
-				if end_frame > last_frame:
-					end_frame = last_frame
-				values = movies_matrix[k][start_frame: end_frame]
-				value = utils.statistic(values, statistic)
-				features.append(values)
-			predict = arousal_model.predict(features)
-			arousal_predict_movie.append(predict)
+			valence_predictions = predict(valence_movie_matrix, valence_model)
+			valence_predictions = scale(valence_predictions)
 
-		valence_predict_movie = utils.scale(valence_predict_movie)
-		arousal_predict_movie = utils.scale(arousal_predict_movie)
+			if t % 2:
+				a_labels = numpy.array(arousal_labels[i][t/2:-t/2], dtype = 'float')
+				v_labels = numpy.array(valence_labels[i][t/2:-t/2], dtype = 'float')
+				x = numpy.arange(t/2, n_annotations - t/2)
+			else:
+				a_labels = numpy.array(arousal_labels[i][t/2:-t/2 + 1], dtype = 'float')
+				v_labels = numpy.array(valence_labels[i][t/2:-t/2 + 1], dtype = 'float')
+				x = numpy.arange(t/2, n_annotations - t/2  + 1)
 
+			a_difference = (a_labels - arousal_predictions)*(a_labels - arousal_predictions)
+			v_difference = (v_labels - valence_predictions)*(v_labels - valence_predictions)
+			rmse = math.sqrt(a_difference.sum()/(n_annotations - t + 1))
+			coeff = numpy.corrcoef(a_labels, arousal_predictions)[0][1]
+			print "Arousal rmse = %f coeff = %f" % (rmse, coeff)
+			rmse = math.sqrt(v_difference.sum()/(n_annotations - t + 1))
+			coeff = numpy.corrcoef(v_labels, valence_predictions)[0][1]
+			print "Valence rmse = %f coeff = %f" % (rmse, coeff)
+			plt.show()
 
-transfer_knowledge()
+Bayesian_valence_model = joblib.load('valence_model_Bayesian.pkl')
+Bayesian_arousal_model = joblib.load('arousal_model_Bayesian.pkl')
+
+ElasticNet_valence_model = joblib.load('valence_model_ElasticNet.pkl')
+ElasticNet_arousal_model = joblib.load('arousal_model_ElasticNet.pkl')
+
+ElasticNetCV_valence_model = joblib.load('valence_model_ElasticNetCV.pkl')
+ElasticNetCV_arousal_model = joblib.load('arousal_model_ElasticNetCV.pkl')
+
+DecisionTree_valence_model = joblib.load('valence_model_DecisionTree.pkl')
+DecisionTree_arousal_model = joblib.load('arousal_model_DecisionTree.pkl')
+
+valence_models = [Bayesian_valence_model, ElasticNet_valence_model, ElasticNetCV_valence_model, 
+				DecisionTree_valence_model]
+arousal_models = [Bayesian_arousal_model, ElasticNet_arousal_model, ElasticNetCV_arousal_model, 
+				DecisionTree_arousal_model]
+transfer_knowledge(valence_models, arousal_models)

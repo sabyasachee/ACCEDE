@@ -284,12 +284,6 @@ def organize_movies():
 				fw.close()
 		print "done", movie
 
-def statistic(values, option):
-	if option == 0:
-		return float(sum(values))/len(values)
-	elif option == 1:
-		
-
 # statistics("../results/intensity", "intensity")
 # statistics("../results/luminance", "luma")
 # statistics("../results/optical_flow", "flow")

@@ -1,7 +1,8 @@
 import math
 import numpy
 import threading
-from mpi4py import MPI
+# from mpi4py import MPI
+from multiprocessing import Process
 
 class movieloadThread(threading.Thread):
 	def __init__(self, i, movie):
@@ -47,6 +48,9 @@ movies = [
 		"Parafundit", "Payload", "Riding_The_Rails", "Sintel", "Spaceman", "Superhero", "Tears_of_Steel", "The_room_of_franz_kafka", 
 		"The_secret_number", "To_Claire_From_Sonny", "Wanted", "You_Again"  	
 		]
+# movies = [
+# 		"After_The_Rain"			
+# 		]
 movies_matrix = []
 n_features = len(feature_names)
 n_samples = 9800
@@ -75,8 +79,6 @@ def load_input():
 def load_input_movie(movie):
 	print "Loading", movie, "..."
 	movie_matrix = []
-	for i in range(0, n_features):
-		movie_matrix.append([])
 	for i, feature_name in enumerate(feature_names):
 		feature_vector = []
 		filename = "../movie_results/%s/%s_%s.txt" % (movie, movie, feature_name)
@@ -87,15 +89,21 @@ def load_input_movie(movie):
 		movie_matrix.append(feature_vector)
 	return movie_matrix
 
+def fast_load_input_movie(movie, i):
+	movie_matrix = load_input_movie(movie)
+	movies_matrix[i] = movie_matrix
+	print movies_matrix
+
 def fast_load_input_movies():
-	for movie in movies:
-		movies_matrix.append([])
-	comm = MPI.COMM_WORLD
+	processes = []
 	for i, movie in enumerate(movies):
-		# thread = movieloadThread(i, movie)
-		# thread.start()
-		movie_matrix = load_input_movie(movie)
-		movies_matrix[i] = movie_matrix
+		movies_matrix.append(None)
+		processes.append(Process(target = fast_load_input_movie, args = (movie, i)))
+	for process in processes:
+		process.start()
+	for process in processes:
+		process.join()
+	print 'Done loading all movies'
 
 # outputs four lists -> valence_labels, arousal_labels, valence_correlation_coefficients and arousal_correlation_coefficients
 # valence_labels and arousal_labels are lists of length 9800
@@ -107,7 +115,7 @@ def load_output():
 	arousal_correlations = dict()
 	valence_correlations = dict()
 
-	print "Loading labels ...",
+	print "Loading labels ..."
 	with open("../annotations/ACCEDEranking.txt") as fr:
 		line = fr.readline()
 		for i in range(0, n_samples):
@@ -117,7 +125,7 @@ def load_output():
 			valence_labels.append(valence_value)
 			arousal_labels.append(arousal_value)
 
-	print "Loading valence_correlation_coefficients ...",
+	print "Loading valence_correlation_coefficients ..."
 	with open("../results/valence_correlations.txt") as fr:
 		line = fr.readline()
 		for i in range(0, n_features):
@@ -130,7 +138,7 @@ def load_output():
 					correlations[j] = -10
 			valence_correlations[feature_name] = correlations
 
-	print "Loading arousal_correlation_coefficients ...",
+	print "Loading arousal_correlation_coefficients ..."
 	with open("../results/arousal_correlations.txt") as fr:
 		line = fr.readline()
 		for i in range(0, n_features):
@@ -169,7 +177,7 @@ def load_output_movies():
 
 # sort the feature_vectors according to correlation_coefficients
 # and return features according to required dimension
-def sort_features(feature_vectors, correlations, n_dimension = n_features):
+def sort_features(feature_vectors, correlations, n_dimension = n_features * 9):
 
 	features = []
 	# sort the feature_vector according to correlations
@@ -182,7 +190,7 @@ def sort_features(feature_vectors, correlations, n_dimension = n_features):
 	# make the features vector
 	print "Filtering..."
 	for i in range(0, n_samples):
-		vector = [tuple_value[2] for tuple_value in feature_vectors[i][:n_dimension]]
+		vector = [tuple_value[2] for tuple_value in feature_vectors[i][: n_dimension]]
 		features.append(vector)
 	return features
 
@@ -193,5 +201,5 @@ def load_fps():
 		line = fr.readline()
 		for line in fr:
 			value = line.strip().split("\t")[1]
-			fps.append(value)
+			fps.append(int(value))
 	return fps
