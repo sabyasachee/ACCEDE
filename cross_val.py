@@ -25,6 +25,7 @@ def simple_cv(features, labels, regressors):
 		best_sqared_difference_sum = None
 		for regressor in regressors:
 			print "\t\tRegressor ", type(regressor).__name__,
+			# print train_features
 			regressor.fit(numpy.array(train_features, dtype = "float"), numpy.array(train_labels, dtype = "float"))
 			valid_predict_labels = regressor.predict(numpy.array(valid_features, dtype = "float"))
 			squared_difference_sum = 0
