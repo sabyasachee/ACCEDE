@@ -95,7 +95,40 @@ def rmse_matrix(vector1, vector2):
 	rmse = math.sqrt(mean)
 	return rmse
 
-# a = np.array([1,2,3])
-# b = np.array([3,4,5])
-# c = np.array([1,2])
-# print join_vectors([a,b,c])
+def extrapolate(labels, predictions, upper_threshold = 1., lower_threshold = -1.):
+	surplus 		= len(labels) - len(predictions)
+	first = predictions[0]
+	second = predictions[1]
+	last = predictions[-1]
+	second_last = predictions[-2]
+	if surplus:
+		if surplus % 2:
+			beginning_predictions = np.empty(surplus/2 + 1)
+			ending_predictions = np.empty(surplus/2)
+		else:
+			beginning_predictions = np.empty(surplus/2)
+			ending_predictions = np.empty(surplus/2)
+
+	for i in range(0, len(beginning_predictions)):
+		value = (len(beginning_predictions) - i)*(first - second) + first
+		if value > upper_threshold:
+			value = upper_threshold
+		if value < lower_threshold:
+			value = lower_threshold
+		beginning_predictions[i] = value
+	for i in range(0, len(ending_predictions)):
+		value = (i + 1)*(last - second_last) + last
+		if value > upper_threshold:
+			value = upper_threshold
+		if value < lower_threshold:
+			value = lower_threshold
+		ending_predictions[i] = value
+	print beginning_predictions, ending_predictions, predictions
+	predictions = join_vectors([beginning_predictions, predictions, 
+		ending_predictions])
+
+	return predictions
+
+labels = np.empty(10)
+predictions = np.array([1,2,3,1])
+print extrapolate(labels, predictions, upper_threshold = 100, lower_threshold = -100)
