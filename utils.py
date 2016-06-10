@@ -284,6 +284,8 @@ def organize_movies():
 				fw.close()
 		print "done", movie
 
+
+
 # statistics("../results/intensity", "intensity")
 # statistics("../results/luminance", "luma")
 # statistics("../results/optical_flow", "flow")

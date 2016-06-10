@@ -43,10 +43,36 @@ feature_names = [
 				"octave9","octave10","octave11"
 				]
 movies = [
-		"After_The_Rain", "Attitude_Matters", "Barely_legal_stories", "Between_Viewings", "Big_Buck_Bunny", "Chatter", "Cloudland", "Damaged_Kung_Fu",
-		"Decay", "Elephant_s_Dream", "First_Bite", "Full_Service", "Islands", "Lesson_Learned", "Norm", "Nuclear_Family", "On_time", "Origami", 
-		"Parafundit", "Payload", "Riding_The_Rails", "Sintel", "Spaceman", "Superhero", "Tears_of_Steel", "The_room_of_franz_kafka", 
-		"The_secret_number", "To_Claire_From_Sonny", "Wanted", "You_Again"  	
+		"After_The_Rain", 
+		"Attitude_Matters", 
+		"Barely_legal_stories", 
+		"Between_Viewings", 
+		"Big_Buck_Bunny", 
+		"Chatter", 
+		"Cloudland", 
+		"Damaged_Kung_Fu",
+		"Decay", 
+		"Elephant_s_Dream", 
+		"First_Bite", 
+		"Full_Service", 
+		"Islands", 
+		"Lesson_Learned", 
+		"Norm", 
+		"Nuclear_Family", 
+		"On_time", 
+		"Origami", 
+		"Parafundit", 
+		"Payload", 
+		"Riding_The_Rails", 
+		"Sintel", 
+		"Spaceman", 
+		"Superhero", 
+		"Tears_of_Steel", 
+		"The_room_of_franz_kafka", 
+		"The_secret_number", 
+		"To_Claire_From_Sonny", 
+		"Wanted", 
+		"You_Again"  	
 		]
 # movies = [
 # 		"After_The_Rain"			

@@ -15,7 +15,7 @@ RANGE = 8
 
 def cross_validation(c_vals, feature_vectors, labels, correlations, k = 1):
 
-	n_dimension = int(k*n_features)
+	n_dimension = int(k*n_features*9)
 	print "n_dimension = ", n_dimension
 	features = []
 	# sort the feature_vector according to correlations
@@ -79,8 +79,6 @@ def cross_validation(c_vals, feature_vectors, labels, correlations, k = 1):
 		best_model.fit(numpy.array(train_features, dtype = "float"), numpy.array(train_labels, dtype = "float"), c_val = best_c_val)
 		test_predict_labels_string = best_model.predict(numpy.array(test_features, dtype = "float"))
 		test_predict_labels = [float(x) for x in test_predict_labels_string]
-		print test_predict_labels
-		print test_labels
 		predict_labels += list(test_predict_labels)
 	
 	print "Done"
@@ -129,10 +127,14 @@ feature_names = [
 				"voiceProb","voiceProb_de","voiceProb_stddev","voiceProb_amean","voiceProb_de_stddev","voiceProb_de_amean",
 				"HNR","HNR_de","HNR_stddev","HNR_amean","HNR_de_stddev","HNR_de_amean",
 				"F0", "F0_de","F0_stddev","F0_amean","F0_de_stddev","F0_de_amean",
-				"pcm_zcr","pcm_zcr_de","pcm_zcr_stddev","pcm_zcr_amean","pcm_zcr_de_stddev","pcm_zcr_de_amean"
+				"pcm_zcr","pcm_zcr_de","pcm_zcr_stddev","pcm_zcr_amean","pcm_zcr_de_stddev","pcm_zcr_de_amean", 
+				"octave0",
+				"octave1","octave2","octave3","octave4",
+				"octave5","octave6","octave7","octave8",
+				"octave9","octave10","octave11"
 				]
 n_features = len(feature_names)
-n_samples = 100
+n_samples = 9800
 # dictionary of correlation coefficients, key --> [mean, median, std, kurtosis, lower_quartile, upper_quartile, min, max, range]
 arousal_correlations = dict()
 valence_correlations = dict()
@@ -213,3 +215,4 @@ print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlat
 print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.5)
 print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.1)
 print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.01)
+print cross_validation(c_vals, feature_vectors, valence_labels, valence_correlations, k = 0.001)

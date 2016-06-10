@@ -39,4 +39,4 @@ def face_detection(file_id):
                 cam.release()
                 cv2.destroyAllWindows()
 
-process_multithread(face_detection)
+# process_multithread(face_detection)
