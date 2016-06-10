@@ -60,3 +60,20 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# Numpy and Pickle files
+*.npy
+*.pkl
+
+# Weka folders and files
+weka-3-6-13/*
+Weka*
+
+# temp files
+temp*
+
+# txt files
+*.txt
+
+# arff files
+*.arff
