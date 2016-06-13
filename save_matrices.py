@@ -1,9 +1,21 @@
 import load
 import matrix
 import numpy
+from multiprocessing import Process
 
 def save_matrices(t_array):
-	
+	'''
+		load the valence and arousal labels
+		load the valence and arousal correlations
+		load movie_matrices each of the form (feature, frames). It is a list of lists
+		for each movie
+			get the window matrix: window_matrix is of the form list of tuples. each tuple of the form-
+				(feature_name, statistic_number, vector) vector is caluclated on a window of t for each in
+				t_array
+			sort the tuples based on correlation values of (feature_name, statistic_number) and filter 
+				it to have only values. number of rows increase 9 times
+			get the transpose and save it in the form (seconds (samples), features)
+	'''
 	valence_labels, arousal_labels = load.load_output_movies()
 	movies = load.movies
 	movies_matrix = []
@@ -28,5 +40,15 @@ def save_matrices(t_array):
 			numpy.save("../movie_matrices/" + movies[i] + "_arousal_" + str(t) + ".npy", arousal_movie_matrix)
 
 # save_matrices([8, 9, 10, 11, 12, 15, 20, 30, 50, 100])
-# save_matrices([])
-save_matrices([1])
+# save_matrices([1])
+# t_array = [2,3,4,5,6,7]
+t_array = [3,4,5]
+processes = []
+for t in t_array:
+	process = Process(target = save_matrices, args = ([t],))
+	processes.append(process)
+	process.start()
+
+for i, process in enumerate(processes):
+	process.join()
+	print 'Process %d joined' % i

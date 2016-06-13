@@ -62,5 +62,5 @@ def parallel():
 	run_detector(start_id, end_id)
 
 if __name__ == "__main__":
-	# parallel()
-    face_detection(9799)
+	parallel()
+    # face_detection(9799)

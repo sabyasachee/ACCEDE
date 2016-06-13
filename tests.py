@@ -1,4 +1,7 @@
 from thread_module import myThread
+from time import sleep
+from mpi4py import MPI
+from multiprocessing import Process, Queue
 
 def test_function(file_id):
 	print file_id
@@ -9,10 +12,36 @@ def test_function_1(file_id, number):
 def test_function_2(file_id, number1, number2):
 	print file_id, number1, number2
 
-thread0 = myThread(0, 0, 0, test_function)
-thread1 = myThread(1, 10, 10, test_function_1, 10)
-thread2 = myThread(2, 20, 20, test_function_2, 10, 20)
+def test_screen():
+	while True:
+		print "Hello"
+		sleep(5)
+		pass
 
-thread0.start()
-thread1.start()
-thread2.start()
+values = []
+ps = []
+
+def func(i, value, q):
+	q.put((i, value))
+
+q = Queue()
+for i in range(0, 5):
+	values.append(0)
+	p = Process(target = func, args = (i, 5*i + 1, q,))
+	ps.append(p)
+	p.start()
+
+for p in ps:
+	p.join()
+
+while not q.empty():
+	i, value = q.get()
+	values[i] = value
+
+print values
+# for (i, value) in q:
+# 	print i, value
+# comm = MPI.COMM_WORLD
+# rank = comm.Get_rank()
+# func(rank, rank*5)
+# print values

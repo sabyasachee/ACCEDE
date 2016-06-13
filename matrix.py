@@ -74,6 +74,10 @@ def clip_matrix(matrix):
 	return new_matrix
 
 def join_matrices(matrices):
+	'''
+		join matrices along row
+		increases the number of rows
+	'''
 	result_matrix = None
 	for matrix in matrices:
 		if result_matrix is None:
@@ -95,8 +99,8 @@ def rmse_matrix(vector1, vector2):
 	rmse = math.sqrt(mean)
 	return rmse
 
-def extrapolate(labels, predictions, upper_threshold = 1., lower_threshold = -1.):
-	surplus 		= len(labels) - len(predictions)
+def extrapolate(labels_length, predictions, upper_threshold = 1., lower_threshold = -1.):
+	surplus = labels_length - len(predictions)
 	first = predictions[0]
 	second = predictions[1]
 	last = predictions[-1]
@@ -123,12 +127,11 @@ def extrapolate(labels, predictions, upper_threshold = 1., lower_threshold = -1.
 		if value < lower_threshold:
 			value = lower_threshold
 		ending_predictions[i] = value
-	print beginning_predictions, ending_predictions, predictions
 	predictions = join_vectors([beginning_predictions, predictions, 
 		ending_predictions])
 
 	return predictions
 
-labels = np.empty(10)
-predictions = np.array([1,2,3,1])
-print extrapolate(labels, predictions, upper_threshold = 100, lower_threshold = -100)
+# labels = np.empty(10)
+# predictions = np.array([1,2,3,1])
+# print extrapolate(labels, predictions, upper_threshold = 100, lower_threshold = -100)
