@@ -20,7 +20,7 @@ for i in [1., 0.9, 0.8, 0.5, 0.1, 0.01, 0.001]:
 	regressors = [DecisionTreeRegressor(max_depth = 2), DecisionTreeRegressor(max_depth = 5), DecisionTreeRegressor(max_depth = 10)]
 	regressors_1 = [LinearRegression(), 
 				BayesianRidge(), 
-				ElasticNet(), 
+				ElasticNet(max_iter = 10000), 
 				ElasticNetCV(max_iter = 10000), 
 				Lasso(), 
 				KNeighborsRegressor(), 

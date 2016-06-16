@@ -201,6 +201,30 @@ def load_output_movies():
 		arousal_labels.append(labels)
 	return valence_labels, arousal_labels
 
+# load valence and movie correlations for different window length
+# output is a dictionary in the same format as that of video correlations
+def load_movie_correlations(t):
+	valence_correlations, arousal_correlations = {}, {}
+	with open('../movie_results/valence_correlations_%d.txt' % t) as fr:
+		for line in fr:
+			feature, statistic, value = line.strip().split('\t')
+			statistic = int(statistic)
+			value = float(value)
+			if feature not in valence_correlations:
+				valence_correlations[feature] = [0,0,0,0,0,0,0,0,0]
+			valence_correlations[feature][statistic] = value
+	print valence_correlations
+	with open('../movie_results/arousal_correlations_%d.txt' % t) as fr:
+		for line in fr:
+			feature, statistic, value = line.strip().split('\t')
+			statistic = int(statistic)
+			value = float(value)
+			if feature not in arousal_correlations:
+				arousal_correlations[feature] = [0,0,0,0,0,0,0,0,0]
+			arousal_correlations[feature][statistic] = value
+	print arousal_correlations
+	return arousal_correlations, valence_correlations
+
 # sort the feature_vectors according to correlation_coefficients
 # and return features according to required dimension
 def sort_features(feature_vectors, correlations, n_dimension = n_features * 9):

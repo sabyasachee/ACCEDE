@@ -53,8 +53,13 @@ def window_matrix(matrix, window_length, n_annotations):
 	return new_matrix
 
 def sort_matrix(matrix, correlations):
+	print correlations
 	matrix = sorted(matrix, key = lambda row_tuple: correlations[row_tuple[0]][row_tuple[1]], 
 		reverse = True)
+
+	for feature, statistic, _ in matrix:
+		print feature, statistic
+
 	new_matrix = []
 	for name, statistic, row in matrix:
 		new_matrix.append(row)
@@ -113,22 +118,22 @@ def extrapolate(labels_length, predictions, upper_threshold = 1., lower_threshol
 			beginning_predictions = np.empty(surplus/2)
 			ending_predictions = np.empty(surplus/2)
 
-	for i in range(0, len(beginning_predictions)):
-		value = (len(beginning_predictions) - i)*(first - second) + first
-		if value > upper_threshold:
-			value = upper_threshold
-		if value < lower_threshold:
-			value = lower_threshold
-		beginning_predictions[i] = value
-	for i in range(0, len(ending_predictions)):
-		value = (i + 1)*(last - second_last) + last
-		if value > upper_threshold:
-			value = upper_threshold
-		if value < lower_threshold:
-			value = lower_threshold
-		ending_predictions[i] = value
-	predictions = join_vectors([beginning_predictions, predictions, 
-		ending_predictions])
+		for i in range(0, len(beginning_predictions)):
+			value = (len(beginning_predictions) - i)*(first - second) + first
+			if value > upper_threshold:
+				value = upper_threshold
+			if value < lower_threshold:
+				value = lower_threshold
+			beginning_predictions[i] = value
+		for i in range(0, len(ending_predictions)):
+			value = (i + 1)*(last - second_last) + last
+			if value > upper_threshold:
+				value = upper_threshold
+			if value < lower_threshold:
+				value = lower_threshold
+			ending_predictions[i] = value
+		predictions = join_vectors([beginning_predictions, predictions, 
+			ending_predictions])
 
 	return predictions
 

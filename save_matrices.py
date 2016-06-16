@@ -1,6 +1,7 @@
 import load
 import matrix
 import numpy
+import sys
 from multiprocessing import Process
 
 def save_matrices(t_array):
@@ -39,16 +40,51 @@ def save_matrices(t_array):
 			numpy.save("../movie_matrices/" + movies[i] + "_valence_" + str(t) + ".npy", valence_movie_matrix)
 			numpy.save("../movie_matrices/" + movies[i] + "_arousal_" + str(t) + ".npy", arousal_movie_matrix)
 
-# save_matrices([8, 9, 10, 11, 12, 15, 20, 30, 50, 100])
-# save_matrices([1])
-# t_array = [2,3,4,5,6,7]
-t_array = [3,4,5]
-processes = []
-for t in t_array:
-	process = Process(target = save_matrices, args = ([t],))
-	processes.append(process)
-	process.start()
+def save_matrices_correlated_movies_features(t_array):
+	'''
+		same as save_matrices
+		but the correlation_values are based on movies and not videos
+	'''
+	valence_labels, arousal_labels = load.load_output_movies()
+	movies = load.movies
+	movies_matrix = []
+	for movie in movies:
+		movies_matrix.append(load.load_input_movie(movie))
 
-for i, process in enumerate(processes):
-	process.join()
-	print 'Process %d joined' % i
+	for t in t_array:
+		print t
+		arousal_correlations, valence_correlations = load.load_movie_correlations(t)
+		for i, movie_matrix in enumerate(movies_matrix):
+			print movies[i]
+			n_annotations = min(len(arousal_labels[i]), len(valence_labels[i]))
+			transformed_movie_matrix = matrix.window_matrix(movie_matrix, t, n_annotations)
+
+			# for feature, statistic, _ in transformed_movie_matrix:
+			# 	print feature, statistic
+
+			arousal_movie_matrix = matrix.sort_matrix(transformed_movie_matrix, arousal_correlations)
+			valence_movie_matrix = matrix.sort_matrix(transformed_movie_matrix, valence_correlations)
+			
+			arousal_movie_matrix = numpy.array(arousal_movie_matrix, dtype = 'float').transpose()
+			valence_movie_matrix = numpy.array(valence_movie_matrix, dtype = 'float').transpose()
+
+			# numpy.save("../movie_matrices_movie_features/" + movies[i] + "_valence_" + str(t) + ".npy", valence_movie_matrix)
+			# numpy.save("../movie_matrices_movie_features/" + movies[i] + "_arousal_" + str(t) + ".npy", arousal_movie_matrix)
+
+# save_matrices([8, 9, 10, 11, 12, 15, 20, 30, 50, 100])
+# save_matrices([3])
+# t_array = [2,3,4,5,6,7]
+# t_array = [3,4,5]
+# processes = []
+# for t in t_array:
+# 	process = Process(target = save_matrices, args = ([t],))
+# 	processes.append(process)
+# 	process.start()
+
+# for i, process in enumerate(processes):
+# 	process.join()
+# 	print 'Process %d joined' % i
+if __name__ == '__main__':
+	argv = sys.argv[1:]
+	t_array = [int(t) for t in argv]
+	save_matrices_correlated_movies_features(t_array)
