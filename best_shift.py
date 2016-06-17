@@ -23,29 +23,31 @@ def shift_values(labels, features, shifts):
 		I_s[i] = I
 	return I_s
 
-def best_shift(valence_matrices, arousal_matrices, all_valence_labels, all_arousal_labels, shifts):
-	valence_sum_Is, arousal_sum_Is = np.zeros(len(shifts)), np.zeros(len(shifts))
+def best_shift(valence_matrices, arousal_matrices, all_valence_labels, all_arousal_labels, valence_shifts, 
+	arousal_shifts):
+	valence_sum_Is, arousal_sum_Is = np.zeros(len(valence_shifts)), np.zeros(len(arousal_shifts))
 	for i in range(len(movies)):
 		valence_matrix, arousal_matrix = valence_matrices[i], arousal_matrices[i]
 		valence_labels, arousal_labels = all_valence_labels[i], all_arousal_labels[i]
-		valence_Is = shift_values(valence_labels, valence_matrix.T, shifts)
-		arousal_Is = shift_values(arousal_labels, arousal_matrix.T, shifts)
+		valence_Is = shift_values(valence_labels, valence_matrix.T, valence_shifts)
+		arousal_Is = shift_values(arousal_labels, arousal_matrix.T, arousal_shifts)
 		print valence_Is, arousal_Is
 		valence_sum_Is += valence_Is
 		arousal_sum_Is += arousal_Is
 		print 'mutual information calculated for shifts for %s' % movies[i]
 	print valence_sum_Is, arousal_sum_Is
-	valence_shift = shifts[np.argmax(valence_sum_Is)]
+	valence_shift = valence_shifts[np.argmax(valence_sum_Is)]
 	print 'best valence shift', valence_shift
-	arousal_shift = shifts[np.argmax(arousal_sum_Is)]
+	arousal_shift = arousal_shifts[np.argmax(arousal_sum_Is)]
 	print 'best arousal shift', arousal_shift
-	if valence_shift:
-		for i in range(len(movies)):
-			valence_matrices[i] = valence_matrices[i][:-valence_shift,:]
-			all_valence_labels[i] = all_valence_labels[i][valence_shift:]
-	if arousal_shift:
-		for i in range(len(movies)):
-			arousal_matrices[i] = arousal_matrices[i][:-arousal_shift,:]
-			all_arousal_labels[i] = all_arousal_labels[i][arousal_shift:]
-	print 'Shift Applied'
-	return valence_matrices, arousal_matrices, all_valence_labels, all_arousal_labels
+	return valence_shift, arousal_shift
+	# if valence_shift:
+	# 	for i in range(len(movies)):
+	# 		valence_matrices[i] = valence_matrices[i][:-valence_shift,:]
+	# 		all_valence_labels[i] = all_valence_labels[i][valence_shift:]
+	# if arousal_shift:
+	# 	for i in range(len(movies)):
+	# 		arousal_matrices[i] = arousal_matrices[i][:-arousal_shift,:]
+	# 		all_arousal_labels[i] = all_arousal_labels[i][arousal_shift:]
+	# print 'Shift Applied'
+	# return valence_matrices, arousal_matrices, all_valence_labels, all_arousal_labels

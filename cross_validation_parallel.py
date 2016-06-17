@@ -23,7 +23,7 @@ def fold_training(valence_predictions, arousal_predictions,
 	if not use_dev:
 		n_train_matrices = n_train_matrices + n_valid_matrices
 
-	for i in range(start_fold, end_fold):
+	for i in range(end_fold - 1, start_fold - 1, -1):
 		print "Fold %d" % i
 		valence_test_matrices	= valence_movie_matrices[i*n_test_matrices: (i+1)*n_test_matrices]
 		valence_test_labels		= valence_labels_movies[i*n_test_matrices: (i+1)*n_test_matrices]
@@ -75,11 +75,15 @@ def fold_training(valence_predictions, arousal_predictions,
 			arousal_valid_matrix	= np.vstack(tuple(arousal_valid_matrices))
 			arousal_valid_labels	= np.hstack(tuple(arousal_valid_labels))
 
-		offset = 0
+		valence_offset, arousal_offset = 0, 0
 		labels_movies = valence_labels_movies[:i*n_test_matrices]
 		for labels_movie in labels_movies:
-			offset += len(labels_movie)	
-		print "Fold %d filling %d to %d" % (i, offset, offset + len(valence_test_labels) - 1)
+			valence_offset += len(labels_movie)	
+		print "Fold %d valence filling %d to %d" % (i, valence_offset, valence_offset + len(valence_test_labels) - 1)
+		labels_movies = arousal_labels_movies[:i*n_test_matrices]
+		for labels_movie in labels_movies:
+			arousal_offset += len(labels_movie)	
+		print "Fold %d arousal filling %d to %d" % (i, arousal_offset, arousal_offset + len(arousal_test_labels) - 1)		
 
 		valence_rmse = None
 		arousal_rmse = None
@@ -134,9 +138,9 @@ def fold_training(valence_predictions, arousal_predictions,
 			arousal_test_labels)), np.corrcoef(arousal_test_predictions, arousal_test_labels)[0][1])
 
 		for j, valence_test_prediction in enumerate(valence_test_predictions):
-			valence_predictions[offset + j] = valence_test_prediction
+			valence_predictions[valence_offset + j] = valence_test_prediction
 		for j, arousal_test_prediction in enumerate(arousal_test_predictions):
-			arousal_predictions[offset + j] = arousal_test_prediction
+			arousal_predictions[arousal_offset + j] = arousal_test_prediction
 
 		valence_correlations[i] = np.corrcoef(valence_test_predictions, valence_test_labels)[0][1]
 		arousal_correlations[i] = np.corrcoef(arousal_test_predictions, arousal_test_labels)[0][1]
@@ -146,11 +150,12 @@ def fold_training(valence_predictions, arousal_predictions,
 def simple_cv(valence_regressors, arousal_regressors, valence_movie_matrices, arousal_movie_matrices, 
 	valence_labels_movies, arousal_labels_movies, n_folds = 10, use_dev = True):
 	n_movies = len(movies)
-	n_train_matrices = (n_movies/n_folds)*(((n_folds - 1)*7)/9)
-	n_valid_matrices = (n_movies/n_folds)*(((n_folds - 1)*2)/9)
+	n_train_matrices = (n_movies/n_folds)*(((n_folds - 1)*8)/10)
+	n_valid_matrices = (n_movies/n_folds)*(((n_folds - 1)*2)/10)
 	n_test_matrices = n_movies/n_folds
 	while n_train_matrices + n_valid_matrices + n_test_matrices < n_movies:
 		n_train_matrices += 1
+	print n_train_matrices, n_valid_matrices, n_test_matrices
 	valence_labels = np.hstack(tuple(valence_labels_movies))
 	arousal_labels = np.hstack(tuple(arousal_labels_movies))
 	valence_predictions = Array('d', len(valence_labels))
@@ -160,6 +165,7 @@ def simple_cv(valence_regressors, arousal_regressors, valence_movie_matrices, ar
 	print len(valence_labels), len(arousal_labels)
 	processes = []
 	for i in range(0, 10):
+		print 'start_fold', (n_folds*i)/10, 'end_fold', (n_folds*(i + 1))/10
 		process = Process(target = fold_training, args = (valence_predictions, arousal_predictions, 
 			valence_correlations, arousal_correlations,
 			(n_folds*i)/10, (n_folds*(i + 1))/10, 
@@ -183,6 +189,22 @@ def simple_cv(valence_regressors, arousal_regressors, valence_movie_matrices, ar
 			valence_predictions)[0][1], np.mean(valence_correlations), np.std(valence_correlations)
 	print math.sqrt(mean_squared_error(arousal_labels, arousal_predictions)), np.corrcoef(arousal_labels, 
 			arousal_predictions)[0][1], np.mean(arousal_correlations), np.std(valence_correlations)
+	valence_starts, valence_ends, arousal_starts, arousal_ends = [], [], [], []
+	valence_length, arousal_length = 0, 0
+	for i in range(len(movies)):
+		valence_starts.append(valence_length)
+		valence_length += len(valence_labels_movies[i])
+		valence_ends.append(valence_length)
+		arousal_starts.append(arousal_length)
+		arousal_length += len(arousal_labels_movies[i])
+		arousal_ends.append(arousal_length)
+	all_diff_valence_labels = valence_labels - valence_predictions
+	all_diff_arousal_labels = arousal_labels - arousal_predictions
+	diff_valence_labels, diff_arousal_labels = [], []
+	for i in range(len(movies)):
+		diff_valence_labels.append(all_diff_valence_labels[valence_starts[i]:valence_ends[i]])
+		diff_arousal_labels.append(all_diff_arousal_labels[arousal_starts[i]:arousal_ends[i]])
+	return diff_valence_labels, diff_arousal_labels
 
 if __name__ == '__main__':
 	valence_regressors = [

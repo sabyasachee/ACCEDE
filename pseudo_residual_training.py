@@ -15,7 +15,10 @@ if __name__ == '__main__':
 	valence_movie_t = 3
 	arousal_movie_t = 1
 	threshold = 0.05
-	shifts = [0,1,2,5,10,50]
+	valence_shift = 0
+	arousal_shift = 15
+	valence_shifts = [0,1,2,3,4,10]
+	arousal_shifts = [9,13,14,15,16,17,25]
 	try:
 		valence_t = int(sys.argv[1])
 		arousal_t = int(sys.argv[2])
@@ -60,26 +63,41 @@ if __name__ == '__main__':
 		elif arousal_movie_t == 2:
 			diff_arousal_labels_movies[i] = diff_arousal_labels_movies[i][1:]
 
-	valence_regressors = [
-						ElasticNetCV(max_iter = 10000),
-						ElasticNet(max_iter = 10000),
-						LinearRegression(),
-						]
-	arousal_regressors = [
-						ElasticNetCV(max_iter = 10000),
-						ElasticNet(max_iter = 10000),
-						LinearRegression(),
-						]
-	print 'Feature Selection...'
-	valence_movie_matrices, arousal_movie_matrices = feature_selection(valence_movie_matrices, 
-		arousal_movie_matrices, diff_valence_labels_movies, diff_arousal_labels_movies, threshold)
-	print 'Shifting...'
-	valence_movie_matrices, arousal_movie_matrices, diff_valence_labels_movies, diff_arousal_labels_movies = \
-	best_shift(valence_movie_matrices, arousal_movie_matrices, diff_valence_labels_movies, 
-		diff_arousal_labels_movies, shifts)
-	for i in range(len(movies)):
-		print valence_movie_matrices[i].shape, diff_valence_labels_movies[i].shape
-		print arousal_movie_matrices[i].shape, diff_arousal_labels_movies[i].shape
-	# print 'Cross validation...'
-	# simple_cv(valence_regressors, arousal_regressors, valence_movie_matrices, arousal_movie_matrices, 
-	# 	diff_valence_labels_movies, diff_arousal_labels_movies, use_dev = True) 
+	for k in range(0, 5):
+		print '**************************************************************'
+		print 'iteration', k
+		valence_regressors = [
+							# ElasticNetCV(max_iter = 100000),
+							# ElasticNet(max_iter = 100000),
+							LinearRegression(),
+							# BayesianRidge()
+							]
+		arousal_regressors = [
+							# ElasticNetCV(max_iter = 100000),
+							# ElasticNet(max_iter = 100000),
+							LinearRegression(),
+							# BayesianRidge()
+							]
+		print 'Feature Selection...'
+		valence_movie_matrices, arousal_movie_matrices = feature_selection(valence_movie_matrices, 
+			arousal_movie_matrices, diff_valence_labels_movies, diff_arousal_labels_movies, threshold)
+		print 'Shifting...'
+		if k:
+			valence_shift, arousal_shift = best_shift(valence_movie_matrices, arousal_movie_matrices, diff_valence_labels_movies, 
+					diff_arousal_labels_movies, valence_shifts, arousal_shifts)
+		if valence_shift:
+			for i in range(len(movies)):
+				valence_movie_matrices[i] = valence_movie_matrices[i][:-valence_shift,:]
+				diff_valence_labels_movies[i] = diff_valence_labels_movies[i][valence_shift:]
+		if arousal_shift:
+			for i in range(len(movies)):
+				arousal_movie_matrices[i] = arousal_movie_matrices[i][:-arousal_shift,:]
+				diff_arousal_labels_movies[i] = diff_arousal_labels_movies[i][arousal_shift:]
+		for i in range(len(movies)):
+			print valence_movie_matrices[i].shape, diff_valence_labels_movies[i].shape
+			print arousal_movie_matrices[i].shape, diff_arousal_labels_movies[i].shape
+
+		print 'Cross validation...'
+		diff_valence_labels_movies, diff_arousal_labels_movies = simple_cv(valence_regressors, arousal_regressors, 
+			valence_movie_matrices, arousal_movie_matrices, 
+			diff_valence_labels_movies, diff_arousal_labels_movies, n_folds = 30, use_dev = False) 
