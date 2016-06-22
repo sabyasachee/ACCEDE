@@ -51,6 +51,8 @@ def feature_selection(valence_matrices, arousal_matrices, valence_labels, arousa
 	for i in range(arousal_matrix.shape[1]):
 		arousal_corr = np.corrcoef(arousal_labels, arousal_matrix[:,i])[0][1]
 		arousal_correlations[i] = arousal_corr
+	print valence_correlations.max(), (valence_correlations > 0.1).sum(), (valence_correlations > 0.2).sum()
+	print arousal_correlations.max(), (arousal_correlations > 0.1).sum(), (arousal_correlations > 0.2).sum()
 	n_valence_features = (valence_correlations > threshold).sum()
 	n_arousal_features = (arousal_correlations > threshold).sum()
 	valence_col_order = np.argsort(valence_correlations)[::-1]
@@ -59,8 +61,8 @@ def feature_selection(valence_matrices, arousal_matrices, valence_labels, arousa
 	arousal_matrix = arousal_matrix[:,arousal_col_order]
 	valence_matrix = valence_matrix[:,n_valence_features:]
 	arousal_matrix = arousal_matrix[:,n_arousal_features:]
-	valence_matrices, arousal_matrices = [], []
+	new_valence_matrices, new_arousal_matrices = [], []
 	for i in range(len(movies)):
-		valence_matrices.append(valence_matrix[valence_start_rows[i]:valence_end_rows[i],:])
-		arousal_matrices.append(arousal_matrix[arousal_start_rows[i]:arousal_end_rows[i],:])
-	return valence_matrices, arousal_matrices
+		new_valence_matrices.append(valence_matrix[valence_start_rows[i]:valence_end_rows[i],:])
+		new_arousal_matrices.append(arousal_matrix[arousal_start_rows[i]:arousal_end_rows[i],:])
+	return new_valence_matrices, new_arousal_matrices

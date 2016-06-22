@@ -31,11 +31,11 @@ def best_shift(valence_matrices, arousal_matrices, all_valence_labels, all_arous
 		valence_labels, arousal_labels = all_valence_labels[i], all_arousal_labels[i]
 		valence_Is = shift_values(valence_labels, valence_matrix.T, valence_shifts)
 		arousal_Is = shift_values(arousal_labels, arousal_matrix.T, arousal_shifts)
-		print valence_Is, arousal_Is
+		# print valence_Is, arousal_Is
 		valence_sum_Is += valence_Is
 		arousal_sum_Is += arousal_Is
-		print 'mutual information calculated for shifts for %s' % movies[i]
-	print valence_sum_Is, arousal_sum_Is
+		# print 'mutual information calculated for shifts for %s' % movies[i]
+	# print valence_sum_Is, arousal_sum_Is
 	valence_shift = valence_shifts[np.argmax(valence_sum_Is)]
 	print 'best valence shift', valence_shift
 	arousal_shift = arousal_shifts[np.argmax(arousal_sum_Is)]

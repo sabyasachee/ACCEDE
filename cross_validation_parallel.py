@@ -12,7 +12,6 @@ from sklearn.metrics import mean_squared_error
 from threshold import threshold_n_features
 
 def fold_training(valence_predictions, arousal_predictions, 
-	valence_correlations, arousal_correlations,
 	start_fold, end_fold,
 	valence_regressors, arousal_regressors, 
 	valence_movie_matrices, arousal_movie_matrices, 
@@ -79,22 +78,17 @@ def fold_training(valence_predictions, arousal_predictions,
 		labels_movies = valence_labels_movies[:i*n_test_matrices]
 		for labels_movie in labels_movies:
 			valence_offset += len(labels_movie)	
-		print "Fold %d valence filling %d to %d" % (i, valence_offset, valence_offset + len(valence_test_labels) - 1)
+		# print "Fold %d valence filling %d to %d" % (i, valence_offset, valence_offset + len(valence_test_labels) - 1)
 		labels_movies = arousal_labels_movies[:i*n_test_matrices]
 		for labels_movie in labels_movies:
 			arousal_offset += len(labels_movie)	
-		print "Fold %d arousal filling %d to %d" % (i, arousal_offset, arousal_offset + len(arousal_test_labels) - 1)		
+		# print "Fold %d arousal filling %d to %d" % (i, arousal_offset, arousal_offset + len(arousal_test_labels) - 1)		
 
 		valence_rmse = None
 		arousal_rmse = None
 		valence_model = valence_regressors[0]
 		arousal_model = arousal_regressors[0]
 		for regressor in valence_regressors:
-			print "\tFold %d Valence regressor %s" % (i, type(regressor).__name__)
-			if type(regressor).__name__ == 'ElasticNet':
-				print "\t\t alpha = %f, l1_ratio = %f" % (regressor.alpha, regressor.l1_ratio)
-			# elif type(regressor).__name__ == 'ElasticNetCV':
-			# 	print "\t\t alpha = %f, l1_ratio = %f" % (regressor.alpha_, regressor.l1_ratio_)
 			regressor.fit(valence_train_matrix, valence_train_labels)
 			if use_dev:
 				valence_valid_predictions = regressor.predict(valence_valid_matrix)
@@ -104,11 +98,6 @@ def fold_training(valence_predictions, arousal_predictions,
 					valence_model = regressor
 
 		for regressor in arousal_regressors:
-			print "\tFold %d Arousal regressor %s" % (i, type(regressor).__name__)
-			if type(regressor).__name__ == 'ElasticNet':
-				print "\t\t alpha = %f, l1_ratio = %f" % (regressor.alpha, regressor.l1_ratio)
-			# elif type(regressor).__name__ == 'ElasticNetCV':
-			# 	print "\t\t alpha = %f, l1_ratio = %f" % (regressor.alpha_, regressor.l1_ratio_)
 			regressor.fit(arousal_train_matrix, arousal_train_labels)
 			if use_dev:
 				arousal_valid_predictions = regressor.predict(arousal_valid_matrix)
@@ -117,19 +106,15 @@ def fold_training(valence_predictions, arousal_predictions,
 					arousal_rmse = rmse
 					arousal_model = regressor
 
-		print "Fold %d best valence model %s" % (i, type(valence_model).__name__)
-		if type(valence_model).__name__ == 'ElasticNet':
-				print "\t\t alpha = %f, l1_ratio = %f" % (valence_model.alpha, valence_model.l1_ratio)
-		# elif type(valence_model).__name__ == 'ElasticNetCV':
-		# 	print "\t\t alpha = %f, l1_ratio = %f" % (valence_model.alpha_, valence_model.l1_ratio_)
-		
-		print "Fold %d best arousal model %s" % (i, type(arousal_model).__name__)
-		if type(arousal_model).__name__ == 'ElasticNet':
-				print "\t\t alpha = %f, l1_ratio = %f" % (arousal_model.alpha, arousal_model.l1_ratio)
-		# elif type(arousal_model).__name__ == 'ElasticNetCV':
-		# 	print "\t\t alpha = %f, l1_ratio = %f" % (arousal_model.alpha_, arousal_model.l1_ratio_)
+		if type(valence_model).__name__ == 'Ridge':
+			print 'Fold %d best valence model Ridge alpha %f' % (i, valence_model.alpha)
+		else:
+			print 'Fold %d best valence model %s' % (i, type(valence_model).__name__)
+		if type(arousal_model).__name__ == 'Ridge':
+			print 'Fold %d best arousal model Ridge alpha %f' % (i, arousal_model.alpha)
+		else:
+			print 'Fold %d best arousal model %s' % (i, type(arousal_model).__name__)
 
-		print "Fold %d Finding predictions" % i
 		valence_test_predictions = valence_model.predict(valence_test_matrix)
 		arousal_test_predictions = arousal_model.predict(arousal_test_matrix)
 		print "Fold %d Valence rmse = %f coeff %f" % (i, math.sqrt(mean_squared_error(valence_test_predictions, 
@@ -141,9 +126,6 @@ def fold_training(valence_predictions, arousal_predictions,
 			valence_predictions[valence_offset + j] = valence_test_prediction
 		for j, arousal_test_prediction in enumerate(arousal_test_predictions):
 			arousal_predictions[arousal_offset + j] = arousal_test_prediction
-
-		valence_correlations[i] = np.corrcoef(valence_test_predictions, valence_test_labels)[0][1]
-		arousal_correlations[i] = np.corrcoef(arousal_test_predictions, arousal_test_labels)[0][1]
 
 		print "Fold %d Done" % i
 
@@ -160,14 +142,9 @@ def simple_cv(valence_regressors, arousal_regressors, valence_movie_matrices, ar
 	arousal_labels = np.hstack(tuple(arousal_labels_movies))
 	valence_predictions = Array('d', len(valence_labels))
 	arousal_predictions = Array('d', len(arousal_labels))
-	valence_correlations = Array('d', len(movies)/n_test_matrices)
-	arousal_correlations = Array('d', len(movies)/n_test_matrices)
-	print len(valence_labels), len(arousal_labels)
 	processes = []
 	for i in range(0, 10):
-		print 'start_fold', (n_folds*i)/10, 'end_fold', (n_folds*(i + 1))/10
 		process = Process(target = fold_training, args = (valence_predictions, arousal_predictions, 
-			valence_correlations, arousal_correlations,
 			(n_folds*i)/10, (n_folds*(i + 1))/10, 
 			valence_regressors, arousal_regressors, 
 			valence_movie_matrices, arousal_movie_matrices, 
@@ -183,12 +160,6 @@ def simple_cv(valence_regressors, arousal_regressors, valence_movie_matrices, ar
 
 	valence_predictions = np.array(valence_predictions, dtype = 'float')
 	arousal_predictions = np.array(arousal_predictions, dtype = 'float')
-	valence_correlations = np.array(valence_correlations, dtype = 'float')
-	arousal_correlations = np.array(arousal_correlations, dtype = 'float')
-	print math.sqrt(mean_squared_error(valence_labels, valence_predictions)), np.corrcoef(valence_labels, 
-			valence_predictions)[0][1], np.mean(valence_correlations), np.std(valence_correlations)
-	print math.sqrt(mean_squared_error(arousal_labels, arousal_predictions)), np.corrcoef(arousal_labels, 
-			arousal_predictions)[0][1], np.mean(arousal_correlations), np.std(valence_correlations)
 	valence_starts, valence_ends, arousal_starts, arousal_ends = [], [], [], []
 	valence_length, arousal_length = 0, 0
 	for i in range(len(movies)):
@@ -198,13 +169,11 @@ def simple_cv(valence_regressors, arousal_regressors, valence_movie_matrices, ar
 		arousal_starts.append(arousal_length)
 		arousal_length += len(arousal_labels_movies[i])
 		arousal_ends.append(arousal_length)
-	all_diff_valence_labels = valence_labels - valence_predictions
-	all_diff_arousal_labels = arousal_labels - arousal_predictions
-	diff_valence_labels, diff_arousal_labels = [], []
+	valence_predictions_movies, arousal_predictions_movies = [], []
 	for i in range(len(movies)):
-		diff_valence_labels.append(all_diff_valence_labels[valence_starts[i]:valence_ends[i]])
-		diff_arousal_labels.append(all_diff_arousal_labels[arousal_starts[i]:arousal_ends[i]])
-	return diff_valence_labels, diff_arousal_labels
+		valence_predictions_movies.append(valence_predictions[valence_starts[i]:valence_ends[i]])
+		arousal_predictions_movies.append(arousal_predictions[arousal_starts[i]:arousal_ends[i]])
+	return valence_predictions_movies, arousal_predictions_movies
 
 if __name__ == '__main__':
 	valence_regressors = [

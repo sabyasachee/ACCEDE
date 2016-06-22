@@ -104,19 +104,31 @@ def rmse_matrix(vector1, vector2):
 	rmse = math.sqrt(mean)
 	return rmse
 
-def extrapolate(labels_length, predictions, upper_threshold = 1., lower_threshold = -1.):
+def extrapolate(labels_length, predictions, upper_threshold = 1., lower_threshold = -1., type = 0):
+	'''
+		type = 0, both ends
+		type = 1, at the beginning only
+		else, at the end only
+	'''
 	surplus = labels_length - len(predictions)
 	first = predictions[0]
 	second = predictions[1]
 	last = predictions[-1]
 	second_last = predictions[-2]
 	if surplus:
-		if surplus % 2:
-			beginning_predictions = np.empty(surplus/2 + 1)
-			ending_predictions = np.empty(surplus/2)
+		if type == 0:
+			if surplus % 2:
+				beginning_predictions = np.empty(surplus/2 + 1)
+				ending_predictions = np.empty(surplus/2)
+			else:
+				beginning_predictions = np.empty(surplus/2)
+				ending_predictions = np.empty(surplus/2)
+		elif type == 1:
+			beginning_predictions = np.empty(surplus)
+			ending_predictions = np.empty(0)
 		else:
-			beginning_predictions = np.empty(surplus/2)
-			ending_predictions = np.empty(surplus/2)
+			ending_predictions = np.empty(surplus)
+			beginning_predictions = np.empty(0)
 
 		for i in range(0, len(beginning_predictions)):
 			value = (len(beginning_predictions) - i)*(first - second) + first
@@ -132,8 +144,8 @@ def extrapolate(labels_length, predictions, upper_threshold = 1., lower_threshol
 			if value < lower_threshold:
 				value = lower_threshold
 			ending_predictions[i] = value
-		predictions = join_vectors([beginning_predictions, predictions, 
-			ending_predictions])
+		predictions = np.hstack((beginning_predictions, predictions, 
+			ending_predictions))
 
 	return predictions
 
