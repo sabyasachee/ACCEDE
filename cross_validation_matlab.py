@@ -14,6 +14,11 @@ from MatlabRidge import MatlabRidge
 from MatlabLasso import MatlabLasso
 from EvalModel import WekaSVR
 from sklearn.svm import LinearSVR
+from pybrain.datasets import SupervisedDataSet
+from pybrain.tools.shortcuts import buildNetwork
+from pybrain.structure import TanhLayer, GaussianLayer, SigmoidLayer, SoftmaxLayer
+from pybrain.supervised.trainers import BackpropTrainer
+import warnings
 
 def fold_training(core, valence_predictions, arousal_predictions,
 	start_fold, end_fold, 
@@ -94,39 +99,47 @@ def fold_training(core, valence_predictions, arousal_predictions,
 		valence_regressor = None
 		arousal_regressor = None
 
-		# Ridge Regression
-		valence_ridge_coeffs = None
-		arousal_ridge_coeffs = None
-		valence_ridge_alpha = None
-		arousal_ridge_alpha = None
-		ridge_alphas = [100., 1000., 10000., 100000.]
-		# ridge_alphas = [1000. ,100000.]
+		# Linear Regression
+		vlr = LinearRegression()
+		vlr.fit(valence_train_matrix, valence_train_labels)
+		alr = LinearRegression()
+		alr.fit(arousal_train_matrix, arousal_train_labels)
+		valence_regressor = 'Linear'
+		arousal_regressor = 'Linear'
 
-		coeffs_matrix = MatlabRidge(valence_train_matrix, valence_train_labels, ridge_alphas, core)
-		print coeffs_matrix.shape, valence_train_matrix.shape, valence_train_labels.shape
-		augmented_valence_valid_matrix = np.insert(valence_valid_matrix, 0, 
-			np.ones(len(valence_valid_matrix)), axis = 1)
-		for j,coeffs in enumerate(coeffs_matrix.T):
-			valence_valid_predictions = np.dot(augmented_valence_valid_matrix, coeffs)
-			rmse = math.sqrt(mean_squared_error(valence_valid_predictions, valence_valid_labels))
-			if valence_rmse is None or valence_rmse > rmse:
-				valence_rmse = rmse
-				valence_ridge_alpha = ridge_alphas[j]
-				valence_ridge_coeffs = coeffs
-				valence_regressor = 'Ridge'
+		# # Ridge Regression
+		# valence_ridge_coeffs = None
+		# arousal_ridge_coeffs = None
+		# valence_ridge_alpha = None
+		# arousal_ridge_alpha = None
+		# ridge_alphas = [10., 100., 1000., 10000., 100000.]
+		# # ridge_alphas = [0., 0.]
 
-		coeffs_matrix = MatlabRidge(arousal_train_matrix, arousal_train_labels, ridge_alphas, core)
-		print coeffs_matrix.shape, arousal_train_matrix.shape, arousal_train_labels.shape
-		augmented_arousal_valid_matrix = np.insert(arousal_valid_matrix, 0, 
-			np.ones(len(arousal_valid_matrix)), axis = 1)
-		for j,coeffs in enumerate(coeffs_matrix.T):
-			arousal_valid_predictions = np.dot(augmented_arousal_valid_matrix, coeffs)
-			rmse = math.sqrt(mean_squared_error(arousal_valid_predictions, arousal_valid_labels))
-			if arousal_rmse is None or arousal_rmse > rmse:
-				arousal_rmse = rmse
-				arousal_ridge_alpha = ridge_alphas[j]
-				arousal_ridge_coeffs = coeffs
-				arousal_regressor = 'Ridge'
+		# coeffs_matrix = MatlabRidge(valence_train_matrix, valence_train_labels, ridge_alphas, core)
+		# print coeffs_matrix.shape, valence_train_matrix.shape, valence_train_labels.shape
+		# augmented_valence_valid_matrix = np.insert(valence_valid_matrix, 0, 
+		# 	np.ones(len(valence_valid_matrix)), axis = 1)
+		# for j,coeffs in enumerate(coeffs_matrix.T):
+		# 	valence_valid_predictions = np.dot(augmented_valence_valid_matrix, coeffs)
+		# 	rmse = math.sqrt(mean_squared_error(valence_valid_predictions, valence_valid_labels))
+		# 	if valence_rmse is None or valence_rmse > rmse:
+		# 		valence_rmse = rmse
+		# 		valence_ridge_alpha = ridge_alphas[j]
+		# 		valence_ridge_coeffs = coeffs
+		# 		valence_regressor = 'Ridge'
+
+		# coeffs_matrix = MatlabRidge(arousal_train_matrix, arousal_train_labels, ridge_alphas, core)
+		# print coeffs_matrix.shape, arousal_train_matrix.shape, arousal_train_labels.shape
+		# augmented_arousal_valid_matrix = np.insert(arousal_valid_matrix, 0, 
+		# 	np.ones(len(arousal_valid_matrix)), axis = 1)
+		# for j,coeffs in enumerate(coeffs_matrix.T):
+		# 	arousal_valid_predictions = np.dot(augmented_arousal_valid_matrix, coeffs)
+		# 	rmse = math.sqrt(mean_squared_error(arousal_valid_predictions, arousal_valid_labels))
+		# 	if arousal_rmse is None or arousal_rmse > rmse:
+		# 		arousal_rmse = rmse
+		# 		arousal_ridge_alpha = ridge_alphas[j]
+		# 		arousal_ridge_coeffs = coeffs
+		# 		arousal_regressor = 'Ridge'
 
 		# Elastic Net Regression
 		# valence_elasticnet_coeffs, valence_elasticnet_bias = None, None
@@ -200,7 +213,7 @@ def fold_training(core, valence_predictions, arousal_predictions,
 		# Sklearn Linear SVR
 		# valence_linearsvr_model, arousal_linearsvr_model = None, None
 		# valence_linearsvr_c, arousal_linearsvr_c = None, None
-		# c_vals = [.001, .01, .1, 1., 10., 100., 1000.]
+		# c_vals = [.001, .0001, .000001]
 		# for c in c_vals:
 		# 	print 'Fold %d working with c %f' % (i, c)
 		# 	regressor = LinearSVR(C = c)
@@ -225,6 +238,84 @@ def fold_training(core, valence_predictions, arousal_predictions,
 		# 		arousal_linearsvr_model = regressor
 		# 		arousal_regressor = 'LinearSVR'
 
+		# # Neural Net 
+		# valence_test_dataset = SupervisedDataSet(valence_test_matrix.shape[1], 1)
+		# valence_train_dataset = SupervisedDataSet(valence_train_matrix.shape[1], 1)
+		# if use_dev:
+		# 	valence_valid_dataset = SupervisedDataSet(valence_valid_matrix.shape[1], 1)
+		# valence_test_dataset.setField('input', valence_test_matrix)
+		# valence_train_dataset.setField('input', valence_train_matrix)
+		# valence_test_dataset.setField('target', np.zeros((valence_test_labels.shape[0],1)))
+		# valence_train_dataset.setField('target', valence_train_labels.reshape(-1,1))
+		# if use_dev:
+		# 	valence_valid_dataset.setField('input', valence_valid_matrix)
+		# 	valence_valid_dataset.setField('target', np.zeros((valence_valid_labels.shape[0],1)))
+
+		# arousal_test_dataset = SupervisedDataSet(arousal_test_matrix.shape[1], 1)
+		# arousal_train_dataset = SupervisedDataSet(arousal_train_matrix.shape[1], 1)
+		# if use_dev:
+		# 	arousal_valid_dataset = SupervisedDataSet(arousal_valid_matrix.shape[1], 1)
+		# arousal_test_dataset.setField('input', arousal_test_matrix)
+		# arousal_train_dataset.setField('input', arousal_train_matrix)
+		# arousal_test_dataset.setField('target', np.zeros((arousal_test_labels.shape[0],1)))
+		# arousal_train_dataset.setField('target', arousal_train_labels.reshape(-1,1))
+		# if use_dev:
+		# 	arousal_valid_dataset.setField('input', arousal_valid_matrix)
+		# 	arousal_valid_dataset.setField('target', np.zeros((arousal_valid_labels.shape[0],1)))
+
+		# n_neurons_list = [100, 200, 300, 400, 500, 600, 700]
+		# layer_classes = [SigmoidLayer, TanhLayer]
+		# epochs = 10
+
+		# valence_n_neurons, arousal_n_neurons = None, None
+		# valence_layer_class, arousal_layer_class = None, None
+		# valence_net, arousal_net = None, None
+
+		# for layer_class in layer_classes:
+		# 	for n_neurons in n_neurons_list:
+		# 		print 'Fold %d n_neurons %d layer_class %s' % (i, n_neurons, layer_class.__name__)
+		# 		net = buildNetwork(valence_train_matrix.shape[1], n_neurons, 1, bias = True, 
+		# 			hiddenclass = layer_class)
+		# 		trainer = BackpropTrainer(net, valence_train_dataset, weightdecay = 0.01, learningrate = 0.005)
+		# 		with warnings.catch_warnings():
+		# 			warnings.filterwarnings('error')
+		# 			try:
+		# 				trainer.trainEpochs(epochs = epochs)
+		# 			except Warning as e:
+		# 				print 'Fold %d Runtime Warning encountered' % i
+		# 				continue
+		# 		valence_valid_predictions = net.activateOnDataset(valence_valid_dataset)
+		# 		valence_valid_predictions = valence_valid_predictions.flatten()
+		# 		rmse = math.sqrt(mean_squared_error(valence_valid_predictions, valence_valid_labels))
+		# 		if valence_rmse is None or valence_rmse > rmse:
+		# 			valence_rmse = rmse
+		# 			valence_n_neurons = n_neurons
+		# 			valence_layer_class = layer_class
+		# 			valence_net = net.copy()
+		# 			valence_regressor = 'NN'
+
+		# for layer_class in layer_classes:
+		# 	for n_neurons in n_neurons_list:
+		# 		print 'Fold %d n_neurons %d layer_class %s' % (i, n_neurons, layer_class.__name__)
+		# 		net = buildNetwork(arousal_train_matrix.shape[1], n_neurons, 1, bias = True, 
+		# 			hiddenclass = layer_class)
+		# 		trainer = BackpropTrainer(net, arousal_train_dataset, weightdecay = 0.01, learningrate = 0.005)
+		# 		with warnings.catch_warnings():
+		# 			warnings.filterwarnings('error')
+		# 			try:
+		# 				trainer.trainEpochs(epochs = epochs)
+		# 			except Warning as e:
+		# 				print 'Fold %d Runtime Warning encountered' % i
+		# 				continue
+		# 		arousal_valid_predictions = net.activateOnDataset(arousal_valid_dataset)
+		# 		arousal_valid_predictions = arousal_valid_predictions.flatten()
+		# 		rmse = math.sqrt(mean_squared_error(arousal_valid_predictions, arousal_valid_labels))
+		# 		if arousal_rmse is None or arousal_rmse > rmse:
+		# 			arousal_rmse = rmse
+		# 			arousal_n_neurons = n_neurons
+		# 			arousal_layer_class = layer_class
+		# 			arousal_net = net.copy()
+		# 			arousal_regressor = 'NN'	
 
 		if valence_regressor == 'Ridge':
 			print 'Fold %d best valence model Ridge alpha %f' % (i, valence_ridge_alpha)
@@ -244,6 +335,14 @@ def fold_training(core, valence_predictions, arousal_predictions,
 		if valence_regressor == 'LinearSVR':
 			print 'Fold %d best valence model LinearSVR c %f' % (i, valence_linearsvr_c)
 			valence_test_predictions = np.array(valence_linearsvr_model.predict(valence_test_matrix), dtype = 'float')
+		if valence_regressor == 'NN':
+			print 'Fold %d best valence model NN n_neurons %d layer_class %s' % (i, valence_n_neurons, 
+				valence_layer_class.__name__)
+			valence_test_predictions = valence_net.activateOnDataset(valence_test_dataset)
+			valence_test_predictions = valence_test_predictions.flatten()
+		if valence_regressor == 'Linear':
+			print 'Fold %d best valence model Linear Regression' % i
+			valence_test_predictions = vlr.predict(valence_test_matrix)
 
 		if arousal_regressor == 'Ridge':
 			print 'Fold %d best arousal model Ridge alpha %f' % (i, arousal_ridge_alpha)
@@ -263,6 +362,14 @@ def fold_training(core, valence_predictions, arousal_predictions,
 		if arousal_regressor == 'LinearSVR':
 			print 'Fold %d best arousal model LinearSVR c %f' % (i, arousal_linearsvr_c)
 			arousal_test_predictions = np.array(arousal_linearsvr_model.predict(arousal_test_matrix), dtype = 'float')
+		if arousal_regressor == 'NN':
+			print 'Fold %d best arousal model NN n_neurons %d layer_class %s' % (i, arousal_n_neurons, 
+				arousal_layer_class.__name__)
+			arousal_test_predictions = arousal_net.activateOnDataset(arousal_test_dataset)
+			arousal_test_predictions = arousal_test_predictions.flatten()
+		if arousal_regressor == 'Linear':
+			print 'Fold %d best arousal model Linear Regression' % i
+			arousal_test_predictions = alr.predict(arousal_test_matrix)
 		
 		valence_rmse = math.sqrt(mean_squared_error(valence_test_predictions, valence_test_labels))
 		valence_correlation = np.corrcoef(valence_test_predictions, valence_test_labels)[0][1]

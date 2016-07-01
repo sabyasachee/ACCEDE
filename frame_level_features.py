@@ -193,15 +193,82 @@ def frame_level_features_movies(filename):
 	np.save("../movie_results/intensity/"+outname+'_intensity.npy', intensity_avg)
 	np.save("../movie_results/optical_flow/"+outname+'_flow.npy', flow_intensity_avg)
 
-# for i in range(0, 9800):
-# 	print i
-# 	frame_level_features(i)
-# home_path = expanduser("~")
-# filenames = [f for f in listdir(home_path + "/Documents/continuous-movies/") if isfile(join(home_path + "/Documents/continuous-movies/", f)) and not f.endswith(".txt")]
-# for filename in filenames:
-# 	frame_level_features_movies(filename)
-# 	print filename, "done"
+def frame_level_features_test(filename):
+
+	outname = filename.strip().split('/')[-1].split('.')[0]
+	print outname
+	DOWNSAMPLE=5
+	cam  = cv2.VideoCapture(filename)
+	fps=cam.get(cv.CV_CAP_PROP_FPS)	#Read the file frame rate
+	print fps
+
+	frame_number=0
+	current_scene_number=0
+	frames_this_shot=0
+
+    #color = np.random.randint(0,255,(1000,3))
+    #feature_params = dict( maxCorners = 300, qualityLevel = 0.3, minDistance = 7, blockSize = 7 )
+    #lk_params = dict(winSize = old_gray.shape, maxLevel = 2, criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+
+	luma=[]
+	intensity_avg=[]
+	flow_intensity_avg=[0]
+
+    #frame_downsample_ref = 5
+	while(cam.isOpened()):
+		ret, img = cam.read()
+		if img is not None:	
+			if not(ret):
+				print "Skipping frame.."
+				continue
+			
+			## Accumulate stuff for this shot
+			#frames_this_shot+=1
+			img_height, img_width, ch = img.shape
+			hsv_flow = np.zeros_like(img)
+			if not frame_number%100 : 
+				print frame_number
+			if frame_number == 0:
+				#ggb2gs
+				gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+				gray = cv2.equalizeHist(gray)
+				flow_ref_img = gray.copy()
+
+				lum_mean = get_img_luma(img)
+				## Compute per frame luminance
+				luma.append(lum_mean)
+
+				## Compute intensity average
+				img_mean = cv2.mean(gray)
+				intensity_avg.append(img_mean[0])
+			
+			## Compute dense optical flow
+			elif frame_number >= 1:
+				gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+				gray = cv2.equalizeHist(gray)
+				flow_input_img = gray.copy()
+				flow_gs = get_flow_img(hsv_flow, flow_ref_img, flow_input_img)
+				#flow_ref_img = flow_input_img
+				flow_intensity_avg.append(cv2.mean(flow_gs)[0])
+
+				lum_mean = get_img_luma(img)
+				## Compute per frame luminance
+				luma.append(lum_mean)
+
+				## Compute RGB intensity average
+				img_mean = cv2.mean(gray)
+				intensity_avg.append(img_mean[0])
+				flow_ref_img = gray
+				
+			frame_number+=1
+		else: 
+			cam.release()
+			cv2.destroyAllWindows()
+#save all low level features
+	np.save("../test_results/luminance/"+outname+'_luma.npy',luma)
+	np.save("../test_results/intensity/"+outname+'_intensity.npy', intensity_avg)
+	np.save("../test_results/optical_flow/"+outname+'_flow.npy', flow_intensity_avg)
 
 if __name__ == '__main__':
 	filename = sys.argv[1]
-	frame_level_features_movies(filename)
+	frame_level_features_test(filename)

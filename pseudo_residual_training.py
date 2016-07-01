@@ -16,14 +16,23 @@ from matrix import extrapolate
 from MatlabRidge import MatlabRidge
 import matplotlib.pyplot as plt
 
+def ccc(x, y):
+	x_mean = np.mean(x)
+	y_mean = np.mean(y)
+	x_var = np.var(x)
+	y_var = np.var(y)
+	cov = np.cov(x, y)[0][1]
+	ccc = float(2 * cov)/(x_var + y_var + (y_mean - x_mean)*(y_mean - x_mean))
+	return ccc
+
 if __name__ == '__main__':
 	valence_t = 10
 	arousal_t = 10
 	valence_movie_t = 3
 	arousal_movie_t = 1
 	threshold = 0.18
-	best_valence_shifts = [0]
-	best_arousal_shifts = [15]
+	best_valence_shifts = []
+	best_arousal_shifts = []
 	valence_shifts = [0,1,2,3,4,10]
 	arousal_shifts = [9,13,14,15,16,17,25]
 	smooths = [10, 20, 30, 50, 100, 200, 300, 500, 1000]
@@ -139,13 +148,34 @@ if __name__ == '__main__':
 	arousal_predictions = np.hstack(tuple(arousal_predictions_movies))
 	valence_labels = np.hstack(tuple(valence_labels_movies))
 	arousal_labels = np.hstack(tuple(arousal_labels_movies))
-	print 'Valence rmse = %0.3f correlation = %0.3f' % (math.sqrt(mean_squared_error(valence_predictions, 
-		valence_labels)), np.corrcoef(valence_predictions, valence_labels)[0][1])
-	print 'Arousal rmse = %0.3f correlation = %0.3f' % (math.sqrt(mean_squared_error(arousal_predictions, 
-		arousal_labels)), np.corrcoef(arousal_predictions, arousal_labels)[0][1])
+	print 'Valence rmse = %0.3f correlation = %0.3f ccc = %0.3f' % (math.sqrt(mean_squared_error(valence_predictions, 
+		valence_labels)), np.corrcoef(valence_predictions, valence_labels)[0][1], 
+		ccc(valence_predictions, valence_labels))
+	print 'Arousal rmse = %0.3f correlation = %0.3f ccc = %0.3f' % (math.sqrt(mean_squared_error(arousal_predictions, 
+		arousal_labels)), np.corrcoef(arousal_predictions, arousal_labels)[0][1], 
+		ccc(arousal_predictions, arousal_labels))
 
-	for k in range(10):
-		print '**************************************************************'
+	# n_predictions = valence_predictions.shape[0]
+	# x = np.arange(n_predictions)
+	# plt.plot(x, valence_predictions, 'r-')
+	# plt.plot(x, valence_labels, 'b-')
+	# plt.show()
+
+	# n_predictions = arousal_predictions.shape[0]
+	# x = np.arange(n_predictions)
+	# plt.plot(x, arousal_predictions, 'r-')
+	# plt.plot(x, arousal_labels, 'b-')
+	# plt.show()
+
+	# for i in range(len(movies)):
+	# 	length = valence_predictions_movies[i].shape[0]
+	# 	valence_predictions_movies[i] = np.zeros((length,))
+	# 	length = arousal_predictions_movies[i].shape[0]
+	# 	arousal_predictions_movies[i] = np.zeros((length,))
+
+	print '**************************************************************'
+
+	for k in range(5):
 		print 'iteration', k + 1
 
 		shifted_valence_movie_matrices, shifted_arousal_movie_matrices = range(len(movies)), range(len(movies))
@@ -185,16 +215,12 @@ if __name__ == '__main__':
 		print filtered_valence_movie_matrices[0].shape, filtered_arousal_movie_matrices[0].shape
 		
 		print 'Finding best shift...'
-		if k:
-			valence_shift, arousal_shift = best_shift(filtered_valence_movie_matrices, 
-				filtered_arousal_movie_matrices, 
-				diff_valence_labels_movies, diff_arousal_labels_movies, 
-				valence_shifts, arousal_shifts)
-			best_valence_shifts.append(valence_shift)
-			best_arousal_shifts.append(arousal_shift)
-		else:
-			valence_shift = best_valence_shifts[0]
-			arousal_shift = best_arousal_shifts[0]
+		valence_shift, arousal_shift = best_shift(filtered_valence_movie_matrices, 
+			filtered_arousal_movie_matrices, 
+			diff_valence_labels_movies, diff_arousal_labels_movies, 
+			valence_shifts, arousal_shifts)
+		best_valence_shifts.append(valence_shift)
+		best_arousal_shifts.append(arousal_shift)
 
 		print 'Shifting ...'
 		if valence_shift:
@@ -237,16 +263,6 @@ if __name__ == '__main__':
 			extrapolated_arousal_predictions_movies[i] = extrapolate(len(arousal_predictions_movies[i])
 				, shifted_arousal_predictions_movies[i], type = 2)
 
-		# print 'Applying smoothing'
-		# for i in range(len(movies)):
-		# 	smooth_l = min(len(extrapolated_valence_predictions_movies[i]), valence_smooth)
-		# 	extrapolated_valence_predictions_movies[i] = np.convolve(extrapolated_valence_predictions_movies[i], 
-		# 		np.ones((smooth_l,))/smooth_l, mode = 'same')
-		# 	smooth_l = min(len(extrapolated_arousal_predictions_movies[i]), arousal_smooth)
-		# 	extrapolated_arousal_predictions_movies[i] = np.convolve(extrapolated_arousal_predictions_movies[i], 
-		# 		np.ones((smooth_l,))/smooth_l, mode = 'same')
-
-		
 		print 'Applying valence smoothing'
 		for i in range(len(movies)):
 			rest_valence_labels_movies = valence_labels_movies[:i] + valence_labels_movies[i+1:]
@@ -303,7 +319,12 @@ if __name__ == '__main__':
 		valence_labels = np.hstack(tuple(valence_labels_movies))
 		arousal_labels = np.hstack(tuple(arousal_labels_movies))
 		print 'iteration', k + 1, 'new overall performance'
-		print 'Valence rmse = %0.3f correlation = %0.3f' % (math.sqrt(mean_squared_error(valence_predictions, 
-			valence_labels)), np.corrcoef(valence_predictions, valence_labels)[0][1])
-		print 'Arousal rmse = %0.3f correlation = %0.3f' % (math.sqrt(mean_squared_error(arousal_predictions, 
-			arousal_labels)), np.corrcoef(arousal_predictions, arousal_labels)[0][1])
+		print 'Valence rmse = %0.3f correlation = %0.3f ccc = %0.3f' % (math.sqrt(mean_squared_error(valence_predictions, 
+			valence_labels)), np.corrcoef(valence_predictions, valence_labels)[0][1], 
+			ccc(valence_predictions, valence_labels))
+		print 'Arousal rmse = %0.3f correlation = %0.3f ccc = %0.3f' % (math.sqrt(mean_squared_error(arousal_predictions, 
+			arousal_labels)), np.corrcoef(arousal_predictions, arousal_labels)[0][1], 
+			ccc(arousal_predictions, arousal_labels))
+
+		print '**************************************************************'
+

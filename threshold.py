@@ -46,21 +46,25 @@ def feature_selection(valence_matrices, arousal_matrices, valence_labels, arousa
 	valence_correlations = np.zeros((valence_matrix.shape[1],))
 	arousal_correlations = np.zeros((arousal_matrix.shape[1],))
 	for i in range(valence_matrix.shape[1]):
-		valence_corr = np.corrcoef(valence_labels, valence_matrix[:,i])[0][1]
+		valence_corr = np.absolute(np.corrcoef(valence_labels, valence_matrix[:,i])[0][1])
 		valence_correlations[i] = valence_corr
 	for i in range(arousal_matrix.shape[1]):
-		arousal_corr = np.corrcoef(arousal_labels, arousal_matrix[:,i])[0][1]
+		arousal_corr = np.absolute(np.corrcoef(arousal_labels, arousal_matrix[:,i])[0][1])
 		arousal_correlations[i] = arousal_corr
-	print valence_correlations.max(), (valence_correlations > 0.1).sum(), (valence_correlations > 0.2).sum()
-	print arousal_correlations.max(), (arousal_correlations > 0.1).sum(), (arousal_correlations > 0.2).sum()
-	n_valence_features = (valence_correlations > threshold).sum()
-	n_arousal_features = (arousal_correlations > threshold).sum()
+	print valence_correlations.max(), valence_correlations.min(), (valence_correlations > 0.1).sum(), \
+		(valence_correlations > 0.2).sum()
+	print arousal_correlations.max(), arousal_correlations.min(), (arousal_correlations > 0.1).sum(), \
+		(arousal_correlations > 0.2).sum()
+	# n_valence_features = (valence_correlations > threshold).sum()
+	# n_arousal_features = (arousal_correlations > threshold).sum()
+	n_valence_features = 50
+	n_arousal_features = 50
 	valence_col_order = np.argsort(valence_correlations)[::-1]
 	arousal_col_order = np.argsort(arousal_correlations)[::-1]
 	valence_matrix = valence_matrix[:,valence_col_order]
 	arousal_matrix = arousal_matrix[:,arousal_col_order]
-	valence_matrix = valence_matrix[:,n_valence_features:]
-	arousal_matrix = arousal_matrix[:,n_arousal_features:]
+	valence_matrix = valence_matrix[:,:n_valence_features]
+	arousal_matrix = arousal_matrix[:,:n_arousal_features]
 	new_valence_matrices, new_arousal_matrices = [], []
 	for i in range(len(movies)):
 		new_valence_matrices.append(valence_matrix[valence_start_rows[i]:valence_end_rows[i],:])
